@@ -1,0 +1,296 @@
+/* Shared Layout — Header, Controls, Global */
+
+*,*::before,*::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+/* ─── Header ─── */
+.header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; min-height: 52px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; z-index: 10;
+  position: relative;
+}
+.header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent-gradient);
+}
+.header .logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.header .logo svg { width: 22px; height: 22px; }
+.header .logo span {
+  font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+  background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header .logo .logo-version { font-size: 11px; color: var(--text-tertiary); margin-left: 4px; }
+
+/* ─── Theme Toggle ─── */
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 8px; cursor: pointer; font-size: 16px; color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.theme-toggle:hover { background: var(--bg-hover); }
+
+/* ─── Language Select ─── */
+.lang-select {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 8px; font-size: 12px; color: var(--text); cursor: pointer;
+}
+
+/* ─── Stats ─── */
+.stats {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: var(--text-secondary);
+  margin-left: auto;
+}
+.stats .stat-item { display: flex; align-items: center; gap: 4px; }
+.stats .stat-value { font-weight: 600; color: var(--text); }
+
+/* ─── Path Filter ─── */
+.path-filter {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  flex: 1; min-width: 0;
+}
+.path-filter::-webkit-scrollbar { display: none; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+  user-select: none;
+}
+.filter-chip:hover { background: var(--bg-hover); border-color: var(--blue); color: var(--blue); }
+.filter-chip.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 600; }
+.filter-chip .chip-count { font-size: 10px; opacity: 0.7; }
+
+/* ─── Viewer Actions ─── */
+.viewer-actions { display: flex; align-items: center; gap: 6px; }
+.viewer-actions .act-btn {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 10px; font-size: 11px; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+}
+.viewer-actions .act-btn:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ─── Trace Path Bar ─── */
+.trace-path-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 20px; font-size: 11px; color: var(--text-tertiary);
+  background: var(--bg); border-bottom: 1px solid var(--border-light);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  min-height: 28px;
+}
+.trace-path-bar:empty { display: none; }
+
+/* ─── Main Layout ─── */
+.main {
+  display: flex; flex: 1; overflow: hidden;
+}
+
+/* ─── Sidebar ─── */
+.sidebar-wrap {
+  width: 320px; min-width: 240px; max-width: 480px;
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg-card);
+  overflow: hidden;
+  resize: horizontal;
+}
+
+/* ─── Search Input ─── */
+.search-input {
+  width: 100%; padding: 8px 12px;
+  border: none; border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card); color: var(--text);
+  font-size: 13px; outline: none; transition: background 0.15s;
+}
+.search-input::placeholder { color: var(--text-tertiary); }
+.search-input:focus { background: var(--bg-hover); border-bottom-color: var(--blue); }
+
+/* ─── Sidebar Sort ─── */
+.sidebar-sort {
+  display: flex; align-items: center; gap: 0;
+  padding: 6px 12px; border-bottom: 1px solid var(--border-light);
+}
+.sidebar-sort .sidebar-sort-segment {
+  padding: 3px 10px; font-size: 11px; font-weight: 500;
+  color: var(--text-tertiary); cursor: pointer;
+  border: 1px solid transparent; border-radius: 999px;
+  transition: all 0.15s;
+}
+.sidebar-sort .sidebar-sort-segment:hover { color: var(--text-secondary); background: var(--bg-hover); }
+.sidebar-sort .sidebar-sort-segment.active {
+  color: var(--blue); background: var(--blue-bg); border-color: var(--blue);
+}
+
+/* ─── Tool Filter ─── */
+.tool-filter {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 6px 12px; border-bottom: 1px solid var(--border-light);
+}
+.tool-filter:empty { display: none; }
+.tool-filter .tool-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.tool-filter .tool-chip:hover { border-color: var(--purple); color: var(--purple); }
+.tool-filter .tool-chip.active { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+
+/* ─── Position Indicator ─── */
+.position-indicator {
+  height: 3px; background: var(--border-light); position: relative;
+}
+.position-indicator .position-bar {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: var(--blue); border-radius: 2px;
+  transition: width 0.15s ease;
+}
+
+/* ─── Date Picker ─── */
+.date-picker {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border-light);
+}
+.date-picker select {
+  flex: 1; padding: 4px 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--text);
+}
+.date-picker button {
+  padding: 4px 8px; background: var(--red-bg); border: 1px solid var(--red);
+  border-radius: var(--radius-sm); font-size: 11px; color: var(--red);
+  cursor: pointer;
+}
+.date-picker button:hover { background: var(--red-bg-hi); }
+
+/* ─── Detail Panel ─── */
+.detail {
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0;
+  background: var(--bg);
+}
+
+/* ─── Error Banner ─── */
+.error-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; margin: 12px 16px 0;
+  background: var(--red-bg); border: 1px solid var(--red);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--red);
+}
+
+/* ─── Continuation Banner ─── */
+.continuation-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; margin: 12px 16px 0;
+  background: var(--amber-bg); border: 1px solid var(--amber);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--amber);
+}
+
+/* ─── Drop Zone ─── */
+.drop-zone {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.drop-zone-inner {
+  text-align: center; padding: 48px 40px;
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  color: var(--text-tertiary); font-size: 14px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.drop-zone.drag-over .drop-zone-inner,
+.drop-zone-inner:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px var(--blue-bg);
+}
+.drop-zone-inner .drop-icon {
+  font-size: 48px; margin-bottom: 12px; opacity: 0.4;
+}
+.drop-zone-inner p { margin-top: 8px; }
+.drop-zone-inner .drop-hint {
+  font-size: 12px; color: var(--text-tertiary); margin-top: 4px; opacity: 0.7;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--border); }
+  50% { border-color: var(--blue); }
+}
+.drop-zone.waiting .drop-zone-inner {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* ─── Mobile Back Button ─── */
+.mobile-back-btn {
+  position: fixed; bottom: 60px; left: 16px;
+  padding: 8px 16px; background: var(--blue); color: white;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 13px; cursor: pointer; z-index: 100;
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Mobile Nav Bar ─── */
+.mobile-nav-bar {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  padding: 8px; background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+.mobile-nav-bar button {
+  padding: 6px 16px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; cursor: pointer; color: var(--text);
+}
+
+/* ─── Global Search Overlay ─── */
+.global-search-overlay {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--bg-card); border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-md); z-index: 1000;
+  padding: 12px 20px;
+}
+.global-search-box {
+  display: flex; align-items: center; gap: 8px;
+  max-width: 600px; margin: 0 auto;
+}
+.global-search-box input {
+  flex: 1; padding: 6px 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--text);
+  outline: none;
+}
+.global-search-box input:focus { border-color: var(--blue); }
+.global-search-count { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.global-search-box button {
+  padding: 4px 8px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 12px; cursor: pointer; color: var(--text);
+}
+.global-search-box button:hover { background: var(--bg-active); }
+
+/* ─── Global Search Highlight ─── */
+.global-search-hit {
+  background: var(--amber-bg); outline: 2px solid var(--amber);
+  border-radius: 2px;
+}
+.global-search-hit.current {
+  background: var(--amber); color: var(--bg);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .sidebar-wrap { width: 100%; max-width: none; border-right: none; }
+  .main { flex-direction: column; }
+  .header { padding: 0 12px; gap: 8px; }
+  .path-filter { display: none; }
+}
+
+@media (max-width: 768px) {
+  .header .logo span { display: none; }
+  .stats { display: none; }
+}

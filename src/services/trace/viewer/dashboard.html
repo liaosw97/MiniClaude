@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-tap Dashboard</title>
+<style>
+/* Design Tokens — CSS Variables */
+:root {
+  --bg: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f2f5;
+  --bg-active: #e8ecf4;
+  --bg-code: #f6f8fa;
+  --border: #e2e4e9;
+  --scrollbar-bg1: #bbbec7;
+  --border-light: #edeef1;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  --text: #1c2024;
+  --text-secondary: #60646c;
+  --text-tertiary: #a0a4ab;
+
+  --blue: #3b82f6;
+  --blue-bg: #eff6ff;
+  --green: #10b981;
+  --green-bg: #ecfdf5;
+  --amber: #f59e0b;
+  --amber-bg: #fffbeb;
+  --red: #ef4444;
+  --red-bg: #fef2f2;
+  --red-bg-hi: #fecaca;
+  --green-bg-hi: #bbf7d0;
+  --purple: #8b5cf6;
+  --purple-bg: #f5f3ff;
+  --cyan: #06b6d4;
+  --cyan-bg: #ecfeff;
+  --orange: #f97316;
+  --orange-bg: #fff7ed;
+  --indigo: #6366f1;
+
+  --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-hover: #1c2128;
+  --bg-active: #252c35;
+  --bg-code: #1c2128;
+  --border: #30363d;
+  --border-light: #21262d;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --text: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --blue: #58a6ff;
+  --blue-bg: #0d2240;
+  --green: #3fb950;
+  --green-bg: #0d2d1a;
+  --amber: #d29922;
+  --amber-bg: #2d2200;
+  --red: #f85149;
+  --red-bg: #3d1117;
+  --red-bg-hi: #6b2020;
+  --green-bg-hi: #1a5c33;
+  --purple: #bc8cff;
+  --purple-bg: #1f1338;
+  --cyan: #39d2c0;
+  --cyan-bg: #0a2e2c;
+  --orange: #f0883e;
+  --orange-bg: #2d1b00;
+  --indigo: #8b8fff;
+  --accent-gradient: linear-gradient(135deg, #58a6ff, #bc8cff);
+}
+
+[data-theme="dark"] .msg.user { border-color: #1f3a5f; }
+[data-theme="dark"] .msg.assistant { border-color: #1a3a26; }
+[data-theme="dark"] .msg.system { border-color: #3d3000; }
+[data-theme="dark"] .msg.tool_result { border-color: #2a1f48; }
+[data-theme="dark"] .msg pre, [data-theme="dark"] .msg .pre-text { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); }
+[data-theme="dark"] .content-block.block-framed { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .json-view .jk { color: #bc8cff; }
+[data-theme="dark"] .json-view .js { color: #3fb950; }
+[data-theme="dark"] .json-view .jn { color: #d29922; }
+[data-theme="dark"] .json-view .jb { color: #f85149; }
+[data-theme="dark"] .json-view .json-punct { color: #6e7681; }
+[data-theme="dark"] .jt-toggle { color: #6e7681; }
+[data-theme="dark"] .jt-toggle:hover { color: #c9d1d9; }
+[data-theme="dark"] .jt-summary { color: #6e7681; }
+
+
+/* Shared Layout — Header, Controls, Global */
+
+*,*::before,*::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+/* ─── Header ─── */
+.header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; min-height: 52px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; z-index: 10;
+  position: relative;
+}
+.header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent-gradient);
+}
+.header .logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.header .logo svg { width: 22px; height: 22px; }
+.header .logo span {
+  font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+  background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header .logo .logo-version { font-size: 11px; color: var(--text-tertiary); margin-left: 4px; }
+
+/* ─── Theme Toggle ─── */
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 8px; cursor: pointer; font-size: 16px; color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.theme-toggle:hover { background: var(--bg-hover); }
+
+/* ─── Language Select ─── */
+.lang-select {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 8px; font-size: 12px; color: var(--text); cursor: pointer;
+}
+
+/* ─── Stats ─── */
+.stats {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: var(--text-secondary);
+  margin-left: auto;
+}
+.stats .stat-item { display: flex; align-items: center; gap: 4px; }
+.stats .stat-value { font-weight: 600; color: var(--text); }
+
+/* ─── Path Filter ─── */
+.path-filter {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  flex: 1; min-width: 0;
+}
+.path-filter::-webkit-scrollbar { display: none; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+  user-select: none;
+}
+.filter-chip:hover { background: var(--bg-hover); border-color: var(--blue); color: var(--blue); }
+.filter-chip.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 600; }
+.filter-chip .chip-count { font-size: 10px; opacity: 0.7; }
+
+/* ─── Viewer Actions ─── */
+.viewer-actions { display: flex; align-items: center; gap: 6px; }
+.viewer-actions .act-btn {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 10px; font-size: 11px; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+}
+.viewer-actions .act-btn:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ─── Trace Path Bar ─── */
+.trace-path-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 20px; font-size: 11px; color: var(--text-tertiary);
+  background: var(--bg); border-bottom: 1px solid var(--border-light);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  min-height: 28px;
+}
+.trace-path-bar:empty { display: none; }
+
+/* ─── Main Layout ─── */
+.main {
+  display: flex; flex: 1; overflow: hidden;
+}
+
+/* ─── Sidebar ─── */
+.sidebar-wrap {
+  width: 320px; min-width: 240px; max-width: 480px;
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg-card);
+  overflow: hidden;
+  resize: horizontal;
+}
+
+/* ─── Search Input ─── */
+.search-input {
+  width: 100%; padding: 8px 12px;
+  border: none; border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card); color: var(--text);
+  font-size: 13px; outline: none; transition: background 0.15s;
+}
+.search-input::placeholder { color: var(--text-tertiary); }
+.search-input:focus { background: var(--bg-hover); border-bottom-color: var(--blue); }
+
+/* ─── Sidebar Sort ─── */
+.sidebar-sort {
+  display: flex; align-items: center; gap: 0;
+  padding: 6px 12px; border-bottom: 1px solid var(--border-light);
+}
+.sidebar-sort .sidebar-sort-segment {
+  padding: 3px 10px; font-size: 11px; font-weight: 500;
+  color: var(--text-tertiary); cursor: pointer;
+  border: 1px solid transparent; border-radius: 999px;
+  transition: all 0.15s;
+}
+.sidebar-sort .sidebar-sort-segment:hover { color: var(--text-secondary); background: var(--bg-hover); }
+.sidebar-sort .sidebar-sort-segment.active {
+  color: var(--blue); background: var(--blue-bg); border-color: var(--blue);
+}
+
+/* ─── Tool Filter ─── */
+.tool-filter {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 6px 12px; border-bottom: 1px solid var(--border-light);
+}
+.tool-filter:empty { display: none; }
+.tool-filter .tool-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.tool-filter .tool-chip:hover { border-color: var(--purple); color: var(--purple); }
+.tool-filter .tool-chip.active { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+
+/* ─── Position Indicator ─── */
+.position-indicator {
+  height: 3px; background: var(--border-light); position: relative;
+}
+.position-indicator .position-bar {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: var(--blue); border-radius: 2px;
+  transition: width 0.15s ease;
+}
+
+/* ─── Date Picker ─── */
+.date-picker {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border-light);
+}
+.date-picker select {
+  flex: 1; padding: 4px 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--text);
+}
+.date-picker button {
+  padding: 4px 8px; background: var(--red-bg); border: 1px solid var(--red);
+  border-radius: var(--radius-sm); font-size: 11px; color: var(--red);
+  cursor: pointer;
+}
+.date-picker button:hover { background: var(--red-bg-hi); }
+
+/* ─── Detail Panel ─── */
+.detail {
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0;
+  background: var(--bg);
+}
+
+/* ─── Error Banner ─── */
+.error-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; margin: 12px 16px 0;
+  background: var(--red-bg); border: 1px solid var(--red);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--red);
+}
+
+/* ─── Continuation Banner ─── */
+.continuation-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; margin: 12px 16px 0;
+  background: var(--amber-bg); border: 1px solid var(--amber);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--amber);
+}
+
+/* ─── Drop Zone ─── */
+.drop-zone {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.drop-zone-inner {
+  text-align: center; padding: 48px 40px;
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  color: var(--text-tertiary); font-size: 14px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.drop-zone.drag-over .drop-zone-inner,
+.drop-zone-inner:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px var(--blue-bg);
+}
+.drop-zone-inner .drop-icon {
+  font-size: 48px; margin-bottom: 12px; opacity: 0.4;
+}
+.drop-zone-inner p { margin-top: 8px; }
+.drop-zone-inner .drop-hint {
+  font-size: 12px; color: var(--text-tertiary); margin-top: 4px; opacity: 0.7;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--border); }
+  50% { border-color: var(--blue); }
+}
+.drop-zone.waiting .drop-zone-inner {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* ─── Mobile Back Button ─── */
+.mobile-back-btn {
+  position: fixed; bottom: 60px; left: 16px;
+  padding: 8px 16px; background: var(--blue); color: white;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 13px; cursor: pointer; z-index: 100;
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Mobile Nav Bar ─── */
+.mobile-nav-bar {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  padding: 8px; background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+.mobile-nav-bar button {
+  padding: 6px 16px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; cursor: pointer; color: var(--text);
+}
+
+/* ─── Global Search Overlay ─── */
+.global-search-overlay {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--bg-card); border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-md); z-index: 1000;
+  padding: 12px 20px;
+}
+.global-search-box {
+  display: flex; align-items: center; gap: 8px;
+  max-width: 600px; margin: 0 auto;
+}
+.global-search-box input {
+  flex: 1; padding: 6px 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--text);
+  outline: none;
+}
+.global-search-box input:focus { border-color: var(--blue); }
+.global-search-count { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.global-search-box button {
+  padding: 4px 8px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 12px; cursor: pointer; color: var(--text);
+}
+.global-search-box button:hover { background: var(--bg-active); }
+
+/* ─── Global Search Highlight ─── */
+.global-search-hit {
+  background: var(--amber-bg); outline: 2px solid var(--amber);
+  border-radius: 2px;
+}
+.global-search-hit.current {
+  background: var(--amber); color: var(--bg);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .sidebar-wrap { width: 100%; max-width: none; border-right: none; }
+  .main { flex-direction: column; }
+  .header { padding: 0 12px; gap: 8px; }
+  .path-filter { display: none; }
+}
+
+@media (max-width: 768px) {
+  .header .logo span { display: none; }
+  .stats { display: none; }
+}
+
+
+/* Dashboard-specific Styles */
+
+/* ─── Control Panel ─── */
+.control-panel {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+.control-panel input {
+  flex: 1; padding: 6px 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--text);
+  outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.control-panel input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.control-panel select {
+  padding: 6px 12px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 12px; color: var(--text); cursor: pointer;
+}
+.control-panel button {
+  padding: 6px 16px; background: var(--accent-gradient);
+  border: none; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500; color: white;
+  cursor: pointer; transition: opacity 0.15s, transform 0.15s;
+}
+.control-panel button:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* ─── Agent Chips ─── */
+.agent-chips {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: nowrap; overflow-x: auto;
+  scrollbar-width: none;
+}
+.agent-chips::-webkit-scrollbar { display: none; }
+.agent-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.agent-chip:hover { background: var(--bg-hover); border-color: var(--blue); color: var(--blue); }
+.agent-chip.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 600; }
+
+/* ─── Overview Card ─── */
+.overview-card {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; padding: 16px 20px;
+}
+.overview-metric {
+  padding: 14px 16px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  transition: box-shadow 0.2s, transform 0.2s;
+  position: relative; overflow: hidden;
+}
+.overview-metric::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--accent-gradient); opacity: 0.6;
+}
+.overview-metric:hover {
+  box-shadow: var(--shadow-md); transform: translateY(-1px);
+}
+.overview-metric .metric-label {
+  font-size: 11px; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.overview-metric .metric-value {
+  font-size: 24px; font-weight: 700; color: var(--text);
+  margin-top: 4px;
+}
+.overview-metric .metric-sub {
+  font-size: 11px; color: var(--text-secondary); margin-top: 2px;
+}
+
+/* ─── Session Table ─── */
+.session-table {
+  flex: 1; overflow-y: auto; padding: 0 20px 20px;
+}
+.session-table table {
+  width: 100%; border-collapse: separate; border-spacing: 0 2px;
+}
+.session-table th {
+  padding: 8px 12px; font-size: 11px; font-weight: 600;
+  color: var(--text-tertiary); text-transform: uppercase;
+  letter-spacing: 0.5px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg); z-index: 1;
+}
+.session-table td {
+  padding: 10px 12px; font-size: 12px;
+  vertical-align: middle;
+  background: var(--bg-card);
+}
+.session-table td:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.session-table td:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.session-table tr {
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+}
+.session-table tr:hover td {
+  background: var(--bg-hover);
+  box-shadow: var(--shadow-sm);
+}
+.session-table tr:hover td:first-child { border-left: 2px solid var(--blue); }
+.session-table tr.active td { background: var(--bg-active); }
+
+/* ─── Token Pill ─── */
+.token-pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
+  background: var(--blue-bg); color: var(--blue);
+}
+
+/* ─── Model Pill ─── */
+.model-pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
+  background: var(--green-bg); color: var(--green);
+}
+
+/* ─── Status Pill ─── */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
+}
+.status-pill.active { background: var(--green-bg); color: var(--green); }
+.status-pill.completed { background: var(--blue-bg); color: var(--blue); }
+.status-pill.error { background: var(--red-bg); color: var(--red); }
+
+/* ─── Detail View ─── */
+.detail {
+  padding: 16px 20px;
+}
+.detail h3 {
+  font-size: 16px; font-weight: 600; margin-bottom: 12px;
+}
+.detail-meta {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-bottom: 16px;
+}
+.detail-meta .meta-item {
+  padding: 8px 12px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.detail-meta .meta-label {
+  font-size: 10px; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.detail-meta .meta-value {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-top: 2px;
+}
+
+/* ─── Viewer Frame ─── */
+.viewer-frame-wrap {
+  width: 100%; height: 600px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.viewer-frame-wrap iframe {
+  width: 100%; height: 100%; border: none;
+}
+
+/* ─── Inspector Bar ─── */
+.detail-inspector-bar {
+  display: flex; align-items: center; gap: 0;
+  padding: 0; margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+.detail-tab {
+  padding: 8px 14px; font-size: 12px; font-weight: 500;
+  color: var(--text-tertiary); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.detail-tab:hover { color: var(--text-secondary); }
+.detail-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ─── Export Buttons ─── */
+.export-btn {
+  padding: 4px 10px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 11px; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+}
+.export-btn:hover { background: var(--bg-active); color: var(--text); }
+
+/* ─── Section / Record Cards ─── */
+.section {
+  margin: 8px 0;
+}
+.section-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); cursor: pointer;
+  user-select: none;
+}
+.section-header:hover { color: var(--text); }
+.section-body { padding-left: 16px; }
+
+.msg {
+  margin: 8px 0; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.msg.user { border-left: 3px solid var(--blue); }
+.msg.assistant { border-left: 3px solid var(--green); }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .overview-card { grid-template-columns: repeat(2, 1fr); }
+  .detail-meta { grid-template-columns: 1fr; }
+  .control-panel { flex-wrap: wrap; }
+}
+
+</style>
+
+</head>
+<body>
+<div class="header">
+  <span class="logo">claude-tap dashboard</span>
+  <div id="agent-chips" class="agent-chips"></div>
+  <div id="stats" class="stats"></div>
+  <button id="theme-toggle" class="theme-toggle" title="Toggle theme">🌓</button>
+  <select id="lang-select" class="lang-select"></select>
+</div>
+<div class="control-panel">
+  <input id="search-input" type="text" placeholder="Search sessions..." />
+  <select id="status-filter">
+    <option value="">All statuses</option>
+    <option value="active">Active</option>
+    <option value="completed">Completed</option>
+  </select>
+  <button id="refresh-btn">Refresh</button>
+</div>
+<div id="overview" class="overview-card"></div>
+<div id="session-list" class="session-table"></div>
+<div id="detail" class="detail" style="display:none"></div>
+<script>
+// src/services/trace/viewer/src/shared/theme.ts
+var THEME_KEY = "claude-tap-theme";
+function getTheme() {
+  return document.documentElement.getAttribute("data-theme") || "light";
+}
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === "dark" || saved === "light") {
+    applyTheme(saved);
+  } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    applyTheme("dark");
+  } else {
+    applyTheme("light");
+  }
+}
+function toggleTheme() {
+  const current = getTheme();
+  applyTheme(current === "dark" ? "light" : "dark");
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem(THEME_KEY, theme);
+  const btn = document.getElementById("theme-toggle");
+  if (btn) {
+    btn.textContent = theme === "dark" ? "☀️" : "\uD83C\uDF19";
+    btn.title = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  }
+}
+
+// src/services/trace/viewer/src/shared/dom.ts
+function $(selector, parent = document) {
+  return parent.querySelector(selector);
+}
+function esc(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// src/services/trace/viewer/src/dashboard/state.ts
+var state = {
+  sessions: [],
+  filtered: [],
+  selectedSessionId: null,
+  search: "",
+  agentFilter: null
+};
+function setSessions(sessions) {
+  state.sessions = sessions;
+  applyFilter();
+}
+function setSearch(search) {
+  state.search = search;
+  applyFilter();
+}
+function setAgentFilter(agent) {
+  state.agentFilter = agent;
+  applyFilter();
+}
+function setSelectedSession(id) {
+  state.selectedSessionId = id;
+}
+function applyFilter() {
+  let filtered = state.sessions;
+  if (state.search) {
+    const q = state.search.toLowerCase();
+    filtered = filtered.filter((s) => s.id.toLowerCase().includes(q) || s.model.toLowerCase().includes(q));
+  }
+  if (state.agentFilter) {
+    filtered = filtered.filter((s) => s.model === state.agentFilter);
+  }
+  state.filtered = filtered;
+}
+function getUniqueAgents() {
+  const agents = new Set(state.sessions.map((s) => s.model));
+  return Array.from(agents).sort();
+}
+function computeOverviewMetrics() {
+  const sessions = state.sessions;
+  const totalTokens = sessions.reduce((sum, s) => sum + s.totalInputTokens + s.totalOutputTokens, 0);
+  const totalTurns = sessions.reduce((sum, s) => sum + s.turns, 0);
+  const uniqueModels = new Set(sessions.map((s) => s.model)).size;
+  return {
+    totalSessions: sessions.length,
+    totalTokens,
+    totalTurns,
+    uniqueModels
+  };
+}
+
+// src/services/trace/viewer/src/shared/format.ts
+function fmtNumber(n) {
+  return n.toLocaleString();
+}
+function fmtTokens(n) {
+  if (n < 1000)
+    return String(n);
+  if (n < 1e6)
+    return `${(n / 1000).toFixed(1)}k`;
+  return `${(n / 1e6).toFixed(2)}M`;
+}
+function fmtTableTime(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+// src/services/trace/viewer/src/dashboard/session-list.ts
+function renderOverview() {
+  const overview = $("#overview");
+  if (!overview)
+    return;
+  const metrics = computeOverviewMetrics();
+  overview.innerHTML = `
+    <div class="overview-metric">
+      <div class="metric-label">Sessions</div>
+      <div class="metric-value">${fmtNumber(metrics.totalSessions)}</div>
+    </div>
+    <div class="overview-metric">
+      <div class="metric-label">Total Tokens</div>
+      <div class="metric-value">${fmtTokens(metrics.totalTokens)}</div>
+    </div>
+    <div class="overview-metric">
+      <div class="metric-label">Total Turns</div>
+      <div class="metric-value">${fmtNumber(metrics.totalTurns)}</div>
+    </div>
+    <div class="overview-metric">
+      <div class="metric-label">Models</div>
+      <div class="metric-value">${metrics.uniqueModels}</div>
+    </div>
+  `;
+}
+function renderAgentChips() {
+  const container = $("#agent-chips");
+  if (!container)
+    return;
+  const agents = getUniqueAgents();
+  if (agents.length <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+  const chips = agents.map((agent) => `
+    <button class="agent-chip ${agent === state.agentFilter ? "active" : ""}"
+            data-agent="${esc(agent)}">
+      ${esc(agent)}
+    </button>
+  `).join("");
+  container.innerHTML = chips;
+  container.querySelectorAll(".agent-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const agent = chip.dataset.agent ?? null;
+      setAgentFilter(agent === state.agentFilter ? null : agent);
+      renderSessionList();
+      renderAgentChips();
+    });
+  });
+}
+function renderSessionList() {
+  const container = $("#session-list");
+  if (!container)
+    return;
+  if (state.filtered.length === 0) {
+    container.innerHTML = `
+      <div class="session-empty">
+        <p>No sessions found</p>
+      </div>
+    `;
+    return;
+  }
+  const rows = state.filtered.map((s) => `
+    <tr data-id="${esc(s.id)}" class="${s.id === state.selectedSessionId ? "active" : ""}">
+      <td><span class="model-pill">${esc(s.model)}</span></td>
+      <td>${esc(s.id.slice(0, 8))}...</td>
+      <td>${fmtNumber(s.turns)}</td>
+      <td><span class="token-pill">${fmtTokens(s.totalInputTokens + s.totalOutputTokens)}</span></td>
+      <td>${fmtTableTime(s.lastActivity)}</td>
+    </tr>
+  `).join("");
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Session</th>
+          <th>Turns</th>
+          <th>Tokens</th>
+          <th>Last Activity</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+function initSessionList(sessions, handlers) {
+  renderSessionList();
+  renderOverview();
+  renderAgentChips();
+  const container = $("#session-list");
+  if (container) {
+    container.addEventListener("click", (e) => {
+      const row = e.target.closest("tr[data-id]");
+      if (row) {
+        const id = row.dataset.id;
+        if (id) {
+          handlers.onSelect(id);
+        }
+      }
+    });
+  }
+  const refreshBtn = $("#refresh-btn");
+  if (refreshBtn && handlers.onRefresh) {
+    refreshBtn.addEventListener("click", handlers.onRefresh);
+  }
+}
+function updateSessionList(sessions) {
+  renderSessionList();
+  renderOverview();
+  renderAgentChips();
+}
+
+// src/services/trace/viewer/src/dashboard/session-detail.ts
+function renderDetail(sessionId) {
+  const detail = $("#detail");
+  if (!detail)
+    return;
+  setSelectedSession(sessionId);
+  detail.style.display = "block";
+  detail.innerHTML = `
+    <div class="detail-header">
+      <button class="back-btn" id="detail-back">← Back</button>
+      <h3>Session: ${esc(sessionId)}</h3>
+      <div class="detail-actions">
+        <button class="export-btn" data-format="jsonl">JSONL</button>
+        <button class="export-btn" data-format="log">LOG</button>
+        <button class="export-btn" data-format="html">HTML</button>
+      </div>
+    </div>
+    <div class="viewer-frame-wrap">
+      <iframe src="/api/sessions/${encodeURIComponent(sessionId)}/html"></iframe>
+    </div>
+  `;
+  const backBtn = $("#detail-back");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      clearDetail();
+      setSelectedSession(null);
+    });
+  }
+  detail.querySelectorAll(".export-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const format = btn.dataset.format;
+      if (format) {
+        exportSession(sessionId, format);
+      }
+    });
+  });
+}
+function clearDetail() {
+  const detail = $("#detail");
+  if (detail) {
+    detail.style.display = "none";
+    detail.innerHTML = "";
+  }
+}
+function exportSession(sessionId, format) {
+  let url;
+  switch (format) {
+    case "jsonl":
+      url = `/api/sessions/${encodeURIComponent(sessionId)}/export/jsonl`;
+      break;
+    case "log":
+      url = `/api/sessions/${encodeURIComponent(sessionId)}/export/log`;
+      break;
+    case "html":
+      url = `/api/sessions/${encodeURIComponent(sessionId)}/html`;
+      break;
+    default:
+      console.error("Unknown export format:", format);
+      return;
+  }
+  window.open(url, "_blank");
+}
+function initSessionDetail(handlers = {}) {
+  clearDetail();
+}
+
+// src/services/trace/viewer/src/dashboard/main.ts
+function initCommonUi() {
+  initTheme();
+  const themeBtn = $("#theme-toggle");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", toggleTheme);
+  }
+}
+async function loadSessions() {
+  try {
+    const resp = await fetch("/api/sessions");
+    if (!resp.ok)
+      throw new Error(`HTTP ${resp.status}`);
+    const sessions = await resp.json();
+    setSessions(sessions);
+    updateSessionList(sessions);
+  } catch (err) {
+    console.error("Failed to load sessions:", err);
+    showError("Failed to load sessions. Is the trace server running?");
+  }
+}
+function showError(message) {
+  const container = $("#session-list");
+  if (container) {
+    container.innerHTML = `
+      <div class="session-error">
+        <p>${message}</p>
+      </div>
+    `;
+  }
+}
+function initSearch() {
+  const searchInput = $("#search-input");
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      setSearch(searchInput.value);
+      renderSessionList();
+      renderOverview();
+      renderAgentChips();
+    });
+  }
+}
+function initLiveRefresh() {
+  if (!window.EventSource) {
+    console.warn("EventSource not supported, using polling");
+    return;
+  }
+  const events = new EventSource("/events");
+  events.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "refresh" || data.type === "record") {
+        loadSessions();
+      }
+    } catch {}
+  };
+  events.onerror = () => {
+    console.log("SSE disconnected, falling back to polling");
+  };
+}
+function initPolling() {
+  setInterval(() => loadSessions().catch(console.error), 5000);
+}
+function main() {
+  initCommonUi();
+  initSearch();
+  initSessionList(state.sessions, {
+    onSelect: (sessionId) => {
+      renderDetail(sessionId);
+    },
+    onRefresh: () => {
+      loadSessions();
+    }
+  });
+  initSessionDetail();
+  loadSessions();
+  initLiveRefresh();
+  initPolling();
+}
+main();
+
+</script>
+</body>
+</html>

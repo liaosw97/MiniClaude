@@ -1,0 +1,3128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-tap Viewer</title>
+<style>
+/* Design Tokens — CSS Variables */
+:root {
+  --bg: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f2f5;
+  --bg-active: #e8ecf4;
+  --bg-code: #f6f8fa;
+  --border: #e2e4e9;
+  --scrollbar-bg1: #bbbec7;
+  --border-light: #edeef1;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  --text: #1c2024;
+  --text-secondary: #60646c;
+  --text-tertiary: #a0a4ab;
+
+  --blue: #3b82f6;
+  --blue-bg: #eff6ff;
+  --green: #10b981;
+  --green-bg: #ecfdf5;
+  --amber: #f59e0b;
+  --amber-bg: #fffbeb;
+  --red: #ef4444;
+  --red-bg: #fef2f2;
+  --red-bg-hi: #fecaca;
+  --green-bg-hi: #bbf7d0;
+  --purple: #8b5cf6;
+  --purple-bg: #f5f3ff;
+  --cyan: #06b6d4;
+  --cyan-bg: #ecfeff;
+  --orange: #f97316;
+  --orange-bg: #fff7ed;
+  --indigo: #6366f1;
+
+  --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-hover: #1c2128;
+  --bg-active: #252c35;
+  --bg-code: #1c2128;
+  --border: #30363d;
+  --border-light: #21262d;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --text: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --blue: #58a6ff;
+  --blue-bg: #0d2240;
+  --green: #3fb950;
+  --green-bg: #0d2d1a;
+  --amber: #d29922;
+  --amber-bg: #2d2200;
+  --red: #f85149;
+  --red-bg: #3d1117;
+  --red-bg-hi: #6b2020;
+  --green-bg-hi: #1a5c33;
+  --purple: #bc8cff;
+  --purple-bg: #1f1338;
+  --cyan: #39d2c0;
+  --cyan-bg: #0a2e2c;
+  --orange: #f0883e;
+  --orange-bg: #2d1b00;
+  --indigo: #8b8fff;
+  --accent-gradient: linear-gradient(135deg, #58a6ff, #bc8cff);
+}
+
+[data-theme="dark"] .msg.user { border-color: #1f3a5f; }
+[data-theme="dark"] .msg.assistant { border-color: #1a3a26; }
+[data-theme="dark"] .msg.system { border-color: #3d3000; }
+[data-theme="dark"] .msg.tool_result { border-color: #2a1f48; }
+[data-theme="dark"] .msg pre, [data-theme="dark"] .msg .pre-text { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); }
+[data-theme="dark"] .content-block.block-framed { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .json-view .jk { color: #bc8cff; }
+[data-theme="dark"] .json-view .js { color: #3fb950; }
+[data-theme="dark"] .json-view .jn { color: #d29922; }
+[data-theme="dark"] .json-view .jb { color: #f85149; }
+[data-theme="dark"] .json-view .json-punct { color: #6e7681; }
+[data-theme="dark"] .jt-toggle { color: #6e7681; }
+[data-theme="dark"] .jt-toggle:hover { color: #c9d1d9; }
+[data-theme="dark"] .jt-summary { color: #6e7681; }
+
+
+/* Shared Layout — Header, Controls, Global */
+
+*,*::before,*::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+/* ─── Header ─── */
+.header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; min-height: 52px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; z-index: 10;
+  position: relative;
+}
+.header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent-gradient);
+}
+.header .logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.header .logo svg { width: 22px; height: 22px; }
+.header .logo span {
+  font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+  background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header .logo .logo-version { font-size: 11px; color: var(--text-tertiary); margin-left: 4px; }
+
+/* ─── Theme Toggle ─── */
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 8px; cursor: pointer; font-size: 16px; color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.theme-toggle:hover { background: var(--bg-hover); }
+
+/* ─── Language Select ─── */
+.lang-select {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 8px; font-size: 12px; color: var(--text); cursor: pointer;
+}
+
+/* ─── Stats ─── */
+.stats {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: var(--text-secondary);
+  margin-left: auto;
+}
+.stats .stat-item { display: flex; align-items: center; gap: 4px; }
+.stats .stat-value { font-weight: 600; color: var(--text); }
+
+/* ─── Path Filter ─── */
+.path-filter {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  flex: 1; min-width: 0;
+}
+.path-filter::-webkit-scrollbar { display: none; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+  user-select: none;
+}
+.filter-chip:hover { background: var(--bg-hover); border-color: var(--blue); color: var(--blue); }
+.filter-chip.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 600; }
+.filter-chip .chip-count { font-size: 10px; opacity: 0.7; }
+
+/* ─── Viewer Actions ─── */
+.viewer-actions { display: flex; align-items: center; gap: 6px; }
+.viewer-actions .act-btn {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 10px; font-size: 11px; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+}
+.viewer-actions .act-btn:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ─── Trace Path Bar ─── */
+.trace-path-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 20px; font-size: 11px; color: var(--text-tertiary);
+  background: var(--bg); border-bottom: 1px solid var(--border-light);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  min-height: 28px;
+}
+.trace-path-bar:empty { display: none; }
+
+/* ─── Main Layout ─── */
+.main {
+  display: flex; flex: 1; overflow: hidden;
+}
+
+/* ─── Sidebar ─── */
+.sidebar-wrap {
+  width: 320px; min-width: 240px; max-width: 480px;
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg-card);
+  overflow: hidden;
+  resize: horizontal;
+}
+
+/* ─── Search Input ─── */
+.search-input {
+  width: 100%; padding: 8px 12px;
+  border: none; border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card); color: var(--text);
+  font-size: 13px; outline: none; transition: background 0.15s;
+}
+.search-input::placeholder { color: var(--text-tertiary); }
+.search-input:focus { background: var(--bg-hover); border-bottom-color: var(--blue); }
+
+/* ─── Sidebar Sort ─── */
+.sidebar-sort {
+  display: flex; align-items: center; gap: 0;
+  padding: 6px 12px; border-bottom: 1px solid var(--border-light);
+}
+.sidebar-sort .sidebar-sort-segment {
+  padding: 3px 10px; font-size: 11px; font-weight: 500;
+  color: var(--text-tertiary); cursor: pointer;
+  border: 1px solid transparent; border-radius: 999px;
+  transition: all 0.15s;
+}
+.sidebar-sort .sidebar-sort-segment:hover { color: var(--text-secondary); background: var(--bg-hover); }
+.sidebar-sort .sidebar-sort-segment.active {
+  color: var(--blue); background: var(--blue-bg); border-color: var(--blue);
+}
+
+/* ─── Tool Filter ─── */
+.tool-filter {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 6px 12px; border-bottom: 1px solid var(--border-light);
+}
+.tool-filter:empty { display: none; }
+.tool-filter .tool-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.tool-filter .tool-chip:hover { border-color: var(--purple); color: var(--purple); }
+.tool-filter .tool-chip.active { background: var(--purple-bg); border-color: var(--purple); color: var(--purple); }
+
+/* ─── Position Indicator ─── */
+.position-indicator {
+  height: 3px; background: var(--border-light); position: relative;
+}
+.position-indicator .position-bar {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: var(--blue); border-radius: 2px;
+  transition: width 0.15s ease;
+}
+
+/* ─── Date Picker ─── */
+.date-picker {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border-light);
+}
+.date-picker select {
+  flex: 1; padding: 4px 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--text);
+}
+.date-picker button {
+  padding: 4px 8px; background: var(--red-bg); border: 1px solid var(--red);
+  border-radius: var(--radius-sm); font-size: 11px; color: var(--red);
+  cursor: pointer;
+}
+.date-picker button:hover { background: var(--red-bg-hi); }
+
+/* ─── Detail Panel ─── */
+.detail {
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0;
+  background: var(--bg);
+}
+
+/* ─── Error Banner ─── */
+.error-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; margin: 12px 16px 0;
+  background: var(--red-bg); border: 1px solid var(--red);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--red);
+}
+
+/* ─── Continuation Banner ─── */
+.continuation-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; margin: 12px 16px 0;
+  background: var(--amber-bg); border: 1px solid var(--amber);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--amber);
+}
+
+/* ─── Drop Zone ─── */
+.drop-zone {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.drop-zone-inner {
+  text-align: center; padding: 48px 40px;
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  color: var(--text-tertiary); font-size: 14px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.drop-zone.drag-over .drop-zone-inner,
+.drop-zone-inner:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px var(--blue-bg);
+}
+.drop-zone-inner .drop-icon {
+  font-size: 48px; margin-bottom: 12px; opacity: 0.4;
+}
+.drop-zone-inner p { margin-top: 8px; }
+.drop-zone-inner .drop-hint {
+  font-size: 12px; color: var(--text-tertiary); margin-top: 4px; opacity: 0.7;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--border); }
+  50% { border-color: var(--blue); }
+}
+.drop-zone.waiting .drop-zone-inner {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* ─── Mobile Back Button ─── */
+.mobile-back-btn {
+  position: fixed; bottom: 60px; left: 16px;
+  padding: 8px 16px; background: var(--blue); color: white;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 13px; cursor: pointer; z-index: 100;
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Mobile Nav Bar ─── */
+.mobile-nav-bar {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  padding: 8px; background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+.mobile-nav-bar button {
+  padding: 6px 16px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; cursor: pointer; color: var(--text);
+}
+
+/* ─── Global Search Overlay ─── */
+.global-search-overlay {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--bg-card); border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-md); z-index: 1000;
+  padding: 12px 20px;
+}
+.global-search-box {
+  display: flex; align-items: center; gap: 8px;
+  max-width: 600px; margin: 0 auto;
+}
+.global-search-box input {
+  flex: 1; padding: 6px 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--text);
+  outline: none;
+}
+.global-search-box input:focus { border-color: var(--blue); }
+.global-search-count { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.global-search-box button {
+  padding: 4px 8px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 12px; cursor: pointer; color: var(--text);
+}
+.global-search-box button:hover { background: var(--bg-active); }
+
+/* ─── Global Search Highlight ─── */
+.global-search-hit {
+  background: var(--amber-bg); outline: 2px solid var(--amber);
+  border-radius: 2px;
+}
+.global-search-hit.current {
+  background: var(--amber); color: var(--bg);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .sidebar-wrap { width: 100%; max-width: none; border-right: none; }
+  .main { flex-direction: column; }
+  .header { padding: 0 12px; gap: 8px; }
+  .path-filter { display: none; }
+}
+
+@media (max-width: 768px) {
+  .header .logo span { display: none; }
+  .stats { display: none; }
+}
+
+
+/* Viewer-specific Styles */
+
+/* ─── Sidebar Items ─── */
+.sidebar {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 4px 0;
+}
+.sidebar.virtual-scroll {
+  position: relative;
+  overflow-y: auto;
+}
+.sidebar-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 12px; cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  border-left: 3px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+}
+.sidebar-item:hover { background: var(--bg-hover); }
+.sidebar-item.active {
+  background: var(--bg-active);
+  border-left-color: var(--blue);
+}
+.sidebar-item.is-error { border-left: 3px solid var(--red); }
+
+.sidebar-item .item-turn {
+  font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+  min-width: 24px; text-align: right;
+}
+.sidebar-item .item-model {
+  font-size: 10px; padding: 1px 6px;
+  border-radius: 999px; font-weight: 500;
+  white-space: nowrap;
+}
+.sidebar-item .item-summary {
+  flex: 1; min-width: 0;
+  font-size: 12px; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sidebar-item .item-time {
+  font-size: 10px; color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.sidebar-item .item-tokens {
+  font-size: 10px; color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ─── Sidebar Group Header ─── */
+.sidebar-group-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; font-size: 11px; font-weight: 600;
+  color: var(--text-secondary); background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer; user-select: none;
+}
+.sidebar-group-header:hover { background: var(--bg-hover); }
+.sidebar-group-header .group-count {
+  font-size: 10px; font-weight: 400; color: var(--text-tertiary);
+}
+
+/* ─── Time Gap ─── */
+.time-gap {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px; font-size: 10px; color: var(--text-tertiary);
+}
+.time-gap::before, .time-gap::after {
+  content: ''; flex: 1; height: 1px; background: var(--border-light);
+}
+
+/* ─── Session Hover Tooltip ─── */
+.session-hover-tooltip {
+  position: absolute; left: 100%; top: 0;
+  padding: 8px 12px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md); font-size: 11px;
+  white-space: nowrap; z-index: 50;
+  pointer-events: none;
+}
+
+/* ─── Action Bar ─── */
+.action-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card);
+}
+.act-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 4px 10px;
+  font-size: 11px; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s;
+}
+.act-btn:hover { background: var(--bg-hover); color: var(--text); border-color: var(--blue); }
+
+/* ─── Detail Inspector Bar ─── */
+.detail-inspector-bar {
+  display: flex; align-items: center; gap: 0;
+  padding: 0 16px; border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card);
+}
+.detail-tab {
+  padding: 8px 14px; font-size: 12px; font-weight: 500;
+  color: var(--text-tertiary); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.detail-tab:hover { color: var(--text-secondary); }
+.detail-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ─── Trace Format Bar ─── */
+.trace-format-bar {
+  display: flex; align-items: center; gap: 0;
+  padding: 0 16px; border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card);
+}
+.trace-format-bar .trace-format-segment {
+  padding: 6px 12px; font-size: 11px; font-weight: 500;
+  color: var(--text-tertiary); cursor: pointer;
+  border: 1px solid transparent; border-radius: 999px;
+  transition: all 0.15s;
+}
+.trace-format-bar .trace-format-segment:hover { color: var(--text-secondary); background: var(--bg-hover); }
+.trace-format-bar .trace-format-segment.active {
+  color: var(--blue); background: var(--blue-bg); border-color: var(--blue);
+}
+
+/* ─── Messages ─── */
+.msg {
+  margin: 12px 16px; padding: 12px 16px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.msg.user { border-left: 3px solid var(--blue); }
+.msg.assistant { border-left: 3px solid var(--green); }
+.msg.system { border-left: 3px solid var(--amber); }
+.msg.tool_result { border-left: 3px solid var(--purple); }
+
+.msg-role {
+  font-size: 14px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 8px;
+}
+.msg.user .msg-role { color: var(--blue, blue); }
+.msg.assistant .msg-role { color: var(--green, green); }
+.msg.system .msg-role { color: var(--amber, amber); }
+.msg.tool_result .msg-role { color: var(--purple, purple); }
+
+/* ─── Code Block ─── */
+.code-block {
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+pre.code-block {
+  white-space: pre;
+  overflow-x: auto;
+}
+.trace-content {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+/* ─── Loading State ─── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.loading::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Icon Sizes ─── */
+.theme-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--text) 50%, transparent 50%);
+  position: relative;
+}
+.theme-icon::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-card);
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.model-pill {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.content-block { margin-top: 8px; }
+.content-block.block-framed {
+  padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+}
+
+.tool-use-label {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; background: var(--purple-bg);
+  border: 1px solid var(--purple); border-radius: 999px;
+  font-size: 11px; font-weight: 500; color: var(--purple);
+}
+
+.thinking-label {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; background: var(--cyan-bg);
+  border: 1px solid var(--cyan); border-radius: 999px;
+  font-size: 11px; font-weight: 500; color: var(--cyan);
+}
+
+/* ─── Tool Blocks ─── */
+.tool-block {
+  margin: 8px 0; padding: 8px 12px;
+  background: var(--bg); border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+.tool-block-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; color: var(--purple);
+  margin-bottom: 6px;
+}
+.tb-param {
+  font-size: 11px; color: var(--text-secondary);
+  padding: 2px 0;
+}
+.tb-param .param-key { color: var(--text-tertiary); }
+.tb-param .param-value { color: var(--text); }
+
+/* ─── Token Bar ─── */
+.token-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; font-size: 11px; color: var(--text-secondary);
+  background: var(--bg-card); border-top: 1px solid var(--border-light);
+}
+.token-bar .token-item { display: flex; align-items: center; gap: 4px; }
+.token-bar .token-value { font-weight: 600; color: var(--text); }
+
+/* ─── JSON View ─── */
+.json-view { font-family: var(--mono); font-size: 12px; line-height: 1.5; overflow-x: auto; max-width: 100%; }
+.json-view .jt-line { padding: 1px 0; }
+.json-view .jt-toggle {
+  cursor: pointer; user-select: none;
+  display: inline-block; width: 14px; text-align: center;
+  color: var(--text-tertiary); font-size: 10px;
+}
+.json-view .jt-toggle:hover { color: var(--text); }
+.json-view .jt-summary { color: var(--text-tertiary); font-style: italic; }
+.json-view .jk { color: var(--purple); }
+.json-view .js { color: var(--green); }
+.json-view .jn { color: var(--amber); }
+.json-view .jb { color: var(--red); }
+.json-view .json-punct { color: var(--text-tertiary); }
+
+/* ─── SSE Events ─── */
+.sse-event {
+  padding: 4px 8px; margin: 4px 0;
+  background: var(--bg); border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm); font-size: 11px;
+}
+.sse-type { color: var(--cyan); font-weight: 600; }
+.sse-data { color: var(--text-secondary); font-family: var(--mono); font-size: 10px; }
+
+/* ─── Trace View ─── */
+.trace-grid {
+  display: grid; grid-template-columns: 120px 1fr;
+  gap: 1px; background: var(--border-light);
+  margin: 8px 16px; border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.trace-block {
+  padding: 6px 10px; background: var(--bg-card);
+  font-size: 12px;
+}
+.trace-code {
+  font-family: var(--mono); font-size: 11px;
+  white-space: pre-wrap; word-break: break-all;
+}
+.trace-pretty { font-size: 12px; }
+.trace-kv { display: flex; gap: 8px; }
+.trace-kv .trace-key { color: var(--text-tertiary); min-width: 80px; }
+.trace-kv .trace-value { color: var(--text); }
+
+/* ─── Section ─── */
+.section { margin: 8px 16px; }
+.section-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); cursor: pointer;
+  user-select: none;
+}
+.section-header:hover { color: var(--text); }
+.section-header .section-toggle {
+  font-size: 10px; color: var(--text-tertiary);
+  transition: transform 0.15s;
+}
+.section-header .section-toggle.collapsed { transform: rotate(-90deg); }
+.section-body { padding-left: 16px; }
+
+/* ─── Diff Modal ─── */
+.diff-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.diff-modal {
+  width: 90vw; max-width: 1200px; height: 80vh;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-md);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.diff-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.diff-header h3 { font-size: 14px; font-weight: 600; }
+.diff-header button {
+  background: none; border: none; font-size: 18px;
+  cursor: pointer; color: var(--text-secondary);
+}
+.diff-section { padding: 12px 16px; overflow-y: auto; flex: 1; }
+.diff-section h4 { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+
+.sbs-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; }
+.sbs-cell {
+  padding: 8px 12px; background: var(--bg);
+  font-family: var(--mono); font-size: 11px;
+  white-space: pre-wrap; word-break: break-all;
+  border: 1px solid var(--border-light);
+}
+.sbs-cell.added { background: var(--green-bg); }
+.sbs-cell.removed { background: var(--red-bg); }
+.sbs-cell.unchanged { opacity: 0.5; }
+
+/* ─── Virtual Scroll Position Indicator ─── */
+.sidebar.virtual-scroll .position-indicator {
+  position: sticky; top: 0; z-index: 5;
+}
+
+/* ─── Mobile Responsive ─── */
+@media (max-width: 900px) {
+  .main {
+    flex-direction: column;
+  }
+
+  .sidebar-wrap {
+    width: 100%;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .detail {
+    width: 100%;
+    min-height: 50vh;
+  }
+
+  /* Mobile navigation buttons */
+  .mobile-back-btn {
+    display: block !important;
+    position: fixed;
+    bottom: 60px;
+    left: 16px;
+    z-index: 100;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+  }
+
+  .mobile-nav-bar {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 8px;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .mobile-nav-bar button {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  /* Adjust header for mobile */
+  .header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .header .logo {
+    font-size: 14px;
+  }
+
+  /* Stack filter chips on mobile */
+  .path-filter {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* Adjust search input for mobile */
+  .search-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  /* Diff modal full screen on mobile */
+  .diff-modal {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    border-radius: 0;
+  }
+
+  .sbs-diff {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Small Mobile (< 480px) ─── */
+@media (max-width: 480px) {
+  .sidebar-item {
+    padding: 6px 8px;
+  }
+
+  .sidebar-item .item-model {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .sidebar-item .item-summary {
+    font-size: 11px;
+  }
+
+  .detail-inspector-bar {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .detail-tab {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+/* ─── Typography ─── */
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+.meta-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.meta-value {
+  font-weight: 400;
+  color: var(--text);
+}
+
+</style>
+
+</head>
+<body>
+<div class="header">
+  <span class="logo">claude-tap</span>
+  <div id="path-filter" class="path-filter"></div>
+  <div id="stats" class="stats"></div>
+  <div id="viewer-actions" class="viewer-actions"></div>
+  <button id="theme-toggle" class="theme-toggle" title="Toggle theme">🌓</button>
+  <select id="lang-select" class="lang-select"></select>
+</div>
+<div id="trace-path-bar" class="trace-path-bar"></div>
+<div id="global-search-overlay" class="global-search-overlay" style="display:none">
+  <div class="global-search-box">
+    <input id="global-search-input" type="text" placeholder="Search..." />
+    <span id="global-search-count"></span>
+    <button id="global-search-prev">▲</button>
+    <button id="global-search-next">▼</button>
+    <button id="global-search-close">✕</button>
+  </div>
+</div>
+<div id="drop-zone" class="drop-zone waiting">
+  <div class="drop-zone-inner">
+    <div class="drop-icon">Trace</div>
+    <p>Drop .jsonl file here or wait for live traces</p>
+    <div class="drop-hint">Supports drag-and-drop of JSONL trace files</div>
+  </div>
+</div>
+<div class="main" id="main-area" style="display:none">
+  <div id="sidebar-wrap" class="sidebar-wrap">
+    <div id="date-picker" class="date-picker"></div>
+    <input id="search-input" class="search-input" type="text" placeholder="Search..." />
+    <div id="sidebar-sort" class="sidebar-sort"></div>
+    <div id="tool-filter" class="tool-filter"></div>
+    <div id="position-indicator" class="position-indicator"></div>
+    <div id="sidebar" class="sidebar"></div>
+  </div>
+  <div id="detail" class="detail"></div>
+</div>
+<div id="mobile-back-btn" class="mobile-back-btn" style="display:none">← Back</div>
+<div id="mobile-nav-bar" class="mobile-nav-bar" style="display:none">
+  <button id="mobile-prev">◀</button>
+  <button id="mobile-next">▶</button>
+</div>
+<script>
+// src/services/trace/viewer/src/shared/theme.ts
+var THEME_KEY = "claude-tap-theme";
+function getTheme() {
+  return document.documentElement.getAttribute("data-theme") || "light";
+}
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === "dark" || saved === "light") {
+    applyTheme(saved);
+  } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    applyTheme("dark");
+  } else {
+    applyTheme("light");
+  }
+}
+function toggleTheme() {
+  const current = getTheme();
+  applyTheme(current === "dark" ? "light" : "dark");
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem(THEME_KEY, theme);
+  const btn = document.getElementById("theme-toggle");
+  if (btn) {
+    btn.textContent = theme === "dark" ? "☀️" : "\uD83C\uDF19";
+    btn.title = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  }
+}
+
+// src/services/trace/viewer/src/shared/i18n.ts
+var LANG_KEY = "claude-tap-lang";
+var currentLang = "en";
+var i18nData = {};
+function initI18n(data) {
+  if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
+    i18nData = {};
+    currentLang = "en";
+    return;
+  }
+  i18nData = data;
+  currentLang = detectLang();
+  applyI18n();
+}
+function isI18nEmpty() {
+  return Object.keys(i18nData).length === 0;
+}
+function detectLang() {
+  const saved = localStorage.getItem(LANG_KEY);
+  if (saved && i18nData[saved])
+    return saved;
+  const nav = navigator.language || "en";
+  if (i18nData[nav])
+    return nav;
+  const short = nav.split("-")[0];
+  if (i18nData[short])
+    return short;
+  return "en";
+}
+function t(key, params) {
+  let value = i18nData[currentLang]?.[key] || i18nData["en"]?.[key] || key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      value = value.replace(`{${k}}`, String(v));
+    }
+  }
+  return value;
+}
+function setLang(lang) {
+  if (!i18nData[lang])
+    return;
+  currentLang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+  applyI18n();
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+}
+function applyI18n() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (key)
+      el.textContent = t(key);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (key)
+      el.placeholder = t(key);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-title");
+    if (key)
+      el.setAttribute("title", t(key));
+  });
+}
+function renderLangSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select)
+    return;
+  select.innerHTML = "";
+  const languages = Object.keys(i18nData);
+  if (languages.length === 0) {
+    const option = document.createElement("option");
+    option.value = "en";
+    option.textContent = "EN";
+    option.selected = true;
+    select.appendChild(option);
+    return;
+  }
+  for (const lang of languages) {
+    const option = document.createElement("option");
+    option.value = lang;
+    option.textContent = lang.toUpperCase();
+    option.selected = lang === currentLang;
+    select.appendChild(option);
+  }
+  select.addEventListener("change", () => setLang(select.value));
+}
+
+// src/services/trace/viewer/src/shared/dom.ts
+function $(selector, parent = document) {
+  return parent.querySelector(selector);
+}
+function esc(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+// src/services/trace/viewer/viewer_i18n.json
+var viewer_i18n_default = {
+  en: {
+    title: "claude-tap",
+    stats_turns: "Turns",
+    stats_tokens: "Total API tokens",
+    stats_time: "Time",
+    stats_tokens_hint: "Sum of input and output tokens across captured requests; this is not the current Claude Code /context usage.",
+    drop_title: "Load Trace File",
+    drop_desc: "Drag & drop a .jsonl trace file, or click to browse",
+    drop_btn: "Choose File",
+    empty_trace_title: "No API calls captured",
+    empty_trace_desc: "This trace file was generated, but it contains no supported API requests. Check the wrapped CLI output, command-line flags, authentication, or network setup.",
+    empty_trace_count: "Captured API calls: 0",
+    empty_trace_hint: "This is a real empty run, not a broken viewer or unloaded file.",
+    turn: "Turn",
+    tok: "tok",
+    btn_request_json: "Request JSON",
+    btn_curl: "cURL",
+    btn_diff: "Diff with Prev",
+    export_jsonl: "Export JSONL",
+    export_log: "Export log",
+    section_system: "System Prompt",
+    section_messages: "Messages",
+    section_tools: "Tools",
+    section_context: "Request Context",
+    section_response: "Response",
+    section_usage: "Token Usage",
+    section_sse: "SSE Events",
+    section_json: "Full JSON",
+    section_metadata: "Metadata",
+    tab_default: "Default",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "Pretty",
+    copy: "Copy",
+    copied: "Copied!",
+    params: "Parameters",
+    required: "required",
+    tok_input: "Input",
+    tok_output: "Output",
+    tok_cache_read: "Cache Read",
+    tok_cache_create: "Cache Create",
+    empty_state: "No entries for selected paths",
+    no_prev: "No previous request",
+    no_content: "No content",
+    no_messages: "No messages in either request",
+    response_context_only: "No response output captured; showing request context only.",
+    continuation_title: "Stateful Responses continuation",
+    continuation_message: "This request has previous_response_id but no captured user message history. The Responses input may be empty or contain only continuation items such as tool results, so the missing prompt/history may live in server-side state or an earlier uncaptured frame.",
+    diff_unchanged: "previous messages unchanged",
+    diff_msg_range: "message #1 ~ #",
+    diff_new: "new",
+    diff_removed: "removed",
+    diff_added: "added",
+    diff_changed: "changed",
+    diff_no_change: "no change",
+    diff_unchanged_lbl: "unchanged",
+    diff_system: "System Prompt",
+    diff_tools: "Tools",
+    diff_params: "Parameters",
+    diff_chars: "chars",
+    diff_tools_unchanged: "tools, unchanged",
+    diff_trailing: "trailing messages unchanged",
+    badge_messages: "messages",
+    badge_tools: "tools",
+    badge_events: "events",
+    search_placeholder: "Search messages, tools, prompts...",
+    history_date: "Date:",
+    history_delete_btn: "Delete",
+    history_delete_title: "Delete stored files for the selected history date",
+    history_delete_live_title: "Live session files cannot be deleted from this control",
+    history_delete_confirm: "Delete stored trace files for {date}? This cannot be undone.",
+    history_delete_working: "Deleting...",
+    history_delete_done: "Deleted {count} files.",
+    history_delete_empty: "No stored files found for {date}.",
+    history_delete_failed: "Delete failed: {error}",
+    sort_label: "Order",
+    sort_model: "Model",
+    sort_turn: "Turn",
+    sort_session: "Session",
+    filter_more: "more",
+    filter_less: "Show less",
+    diff_sys_old: "Previous",
+    diff_sys_new: "Current",
+    diff_fallback_warning: "No exact thread match found — showing closest same-model request",
+    diff_select_target: "Compare against:",
+    diff_select_auto: "Auto"
+  },
+  "zh-CN": {
+    title: "claude-tap",
+    stats_turns: "轮次",
+    stats_tokens: "累计 API Token",
+    stats_time: "耗时",
+    stats_tokens_hint: "跨所有已捕获请求累计 input+output token；不等同于 Claude Code /context 当前上下文占用。",
+    drop_title: "加载 Trace 文件",
+    drop_desc: "拖放 .jsonl 文件到此处，或点击选择文件",
+    drop_btn: "选择文件",
+    empty_trace_title: "未捕获到 API 请求",
+    empty_trace_desc: "这个 trace 文件已经生成，但其中没有受支持的 API 请求。请检查被包装 CLI 的输出、命令参数、认证状态或网络配置。",
+    empty_trace_count: "已捕获 API 请求：0",
+    empty_trace_hint: "这是一次真实的空运行，不是 viewer 损坏或文件未加载。",
+    turn: "轮次",
+    tok: "tok",
+    btn_request_json: "请求 JSON",
+    btn_curl: "cURL",
+    btn_diff: "对比上次",
+    export_jsonl: "导出 JSONL",
+    export_log: "导出日志",
+    section_system: "系统提示词",
+    section_messages: "消息",
+    section_tools: "工具",
+    section_context: "请求上下文",
+    section_response: "响应",
+    section_usage: "Token 用量",
+    section_sse: "SSE 事件",
+    section_json: "完整 JSON",
+    section_metadata: "元数据",
+    tab_default: "默认",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "美化",
+    copy: "复制",
+    copied: "已复制！",
+    params: "参数",
+    required: "必填",
+    tok_input: "输入",
+    tok_output: "输出",
+    tok_cache_read: "缓存读取",
+    tok_cache_create: "缓存创建",
+    empty_state: "当前路径下无条目",
+    no_prev: "无前序请求",
+    no_content: "无内容",
+    no_messages: "两次请求均无消息",
+    response_context_only: "未捕获到响应输出；当前仅展示请求上下文。",
+    continuation_title: "有状态 Responses 续接",
+    continuation_message: "此请求包含 previous_response_id，但没有捕获到用户消息历史。Responses input 可能为空，或仅包含工具结果等续接项，因此缺失的提示词/历史可能位于服务端状态中，或位于更早但未捕获的帧中。",
+    diff_unchanged: "条前序消息未变化",
+    diff_msg_range: "消息 #1 ~ #",
+    diff_new: "新增",
+    diff_removed: "移除",
+    diff_added: "新增",
+    diff_changed: "变化",
+    diff_no_change: "无变化",
+    diff_unchanged_lbl: "无变化",
+    diff_system: "系统提示词",
+    diff_tools: "工具",
+    diff_params: "参数",
+    diff_chars: "字符",
+    diff_tools_unchanged: "个工具，无变化",
+    diff_trailing: "末尾消息无变化",
+    badge_messages: "条消息",
+    badge_tools: "个工具",
+    badge_events: "个事件",
+    search_placeholder: "搜索消息、工具、提示词...",
+    history_date: "日期：",
+    history_delete_btn: "删除",
+    history_delete_title: "删除所选历史日期的已存储文件",
+    history_delete_live_title: "当前 Live 会话不能在这里删除",
+    history_delete_confirm: "确定删除 {date} 的已存储 trace 文件吗？此操作不可撤销。",
+    history_delete_working: "正在删除...",
+    history_delete_done: "已删除 {count} 个文件。",
+    history_delete_empty: "未找到 {date} 的已存储文件。",
+    history_delete_failed: "删除失败：{error}",
+    sort_label: "排序",
+    sort_model: "模型",
+    sort_turn: "轮次",
+    sort_session: "会话",
+    filter_more: "更多",
+    filter_less: "收起",
+    diff_sys_old: "上次",
+    diff_sys_new: "本次",
+    diff_fallback_warning: "未找到精确线程匹配 — 显示最近的同模型请求",
+    diff_select_target: "对比对象：",
+    diff_select_auto: "自动"
+  },
+  ja: {
+    title: "claude-tap",
+    stats_turns: "ターン",
+    stats_tokens: "累計APIトークン",
+    stats_time: "時間",
+    stats_tokens_hint: "キャプチャ済みリクエスト全体の入力+出力トークン合計です。現在の Claude Code /context 使用量ではありません。",
+    drop_title: "トレースファイルを読み込む",
+    drop_desc: ".jsonl ファイルをドラッグ＆ドロップ、またはクリックして選択",
+    drop_btn: "ファイル選択",
+    empty_trace_title: "APIリクエストはキャプチャされませんでした",
+    empty_trace_desc: "このトレースファイルは生成されましたが、対応する API リクエストは含まれていません。ラップされた CLI の出力、コマンドライン引数、認証状態、またはネットワーク設定を確認してください。",
+    empty_trace_count: "キャプチャ済み API リクエスト：0",
+    empty_trace_hint: "これは実際の空実行であり、viewer の破損や未ロードのファイルではありません。",
+    turn: "ターン",
+    tok: "tok",
+    btn_request_json: "リクエスト JSON",
+    btn_curl: "cURL",
+    btn_diff: "前回と比較",
+    export_jsonl: "JSONL をエクスポート",
+    export_log: "ログをエクスポート",
+    section_system: "システムプロンプト",
+    section_messages: "メッセージ",
+    section_tools: "ツール",
+    section_context: "リクエストコンテキスト",
+    section_response: "レスポンス",
+    section_usage: "トークン使用量",
+    section_sse: "SSE イベント",
+    section_json: "完全 JSON",
+    section_metadata: "メタデータ",
+    tab_default: "デフォルト",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "整形",
+    copy: "コピー",
+    copied: "コピー済み！",
+    params: "パラメータ",
+    required: "必須",
+    tok_input: "入力",
+    tok_output: "出力",
+    tok_cache_read: "キャッシュ読取",
+    tok_cache_create: "キャッシュ作成",
+    empty_state: "選択パスにエントリがありません",
+    no_prev: "前回のリクエストなし",
+    no_content: "コンテンツなし",
+    no_messages: "両方のリクエストにメッセージなし",
+    response_context_only: "レスポンス出力はキャプチャされていません。リクエストコンテキストのみを表示しています。",
+    continuation_title: "ステートフルな Responses 継続",
+    continuation_message: "このリクエストには previous_response_id がありますが、ユーザーメッセージ履歴はキャプチャされていません。Responses input は空、またはツール結果などの継続項目のみである可能性があり、欠落したプロンプト/履歴はサーバー側状態または以前の未キャプチャフレームにある可能性があります。",
+    diff_unchanged: "件の前のメッセージは変更なし",
+    diff_msg_range: "メッセージ #1 ~ #",
+    diff_new: "新規",
+    diff_removed: "削除",
+    diff_added: "追加",
+    diff_changed: "変更",
+    diff_no_change: "変更なし",
+    diff_unchanged_lbl: "変更なし",
+    diff_system: "システムプロンプト",
+    diff_tools: "ツール",
+    diff_params: "パラメータ",
+    diff_chars: "文字",
+    diff_tools_unchanged: "個のツール、変更なし",
+    diff_trailing: "末尾メッセージ変更なし",
+    badge_messages: "件のメッセージ",
+    badge_tools: "個のツール",
+    badge_events: "件のイベント",
+    search_placeholder: "メッセージ、ツール、プロンプトを検索...",
+    history_date: "日付：",
+    history_delete_btn: "削除",
+    history_delete_title: "選択した履歴日の保存ファイルを削除",
+    history_delete_live_title: "Live セッションのファイルはここでは削除できません",
+    history_delete_confirm: "{date} の保存済みトレースファイルを削除しますか？この操作は元に戻せません。",
+    history_delete_working: "削除中...",
+    history_delete_done: "{count} 個のファイルを削除しました。",
+    history_delete_empty: "{date} の保存ファイルは見つかりません。",
+    history_delete_failed: "削除に失敗しました：{error}",
+    sort_label: "順序",
+    sort_model: "モデル",
+    sort_turn: "ターン",
+    sort_session: "セッション",
+    filter_more: "他",
+    filter_less: "折りたたむ",
+    diff_sys_old: "前回",
+    diff_sys_new: "今回",
+    diff_fallback_warning: "正確なスレッド一致が見つかりません — 同モデルの直近のリクエストを表示",
+    diff_select_target: "比較対象：",
+    diff_select_auto: "自動"
+  },
+  ko: {
+    title: "claude-tap",
+    stats_turns: "턴",
+    stats_tokens: "누적 API 토큰",
+    stats_time: "시간",
+    stats_tokens_hint: "캡처된 모든 요청의 입력+출력 토큰 합계입니다. 현재 Claude Code /context 사용량이 아닙니다.",
+    drop_title: "트레이스 파일 로드",
+    drop_desc: ".jsonl 파일을 드래그 앤 드롭하거나 클릭하여 선택",
+    drop_btn: "파일 선택",
+    empty_trace_title: "API 요청이 캡처되지 않았습니다",
+    empty_trace_desc: "이 트레이스 파일은 생성되었지만 지원되는 API 요청이 없습니다. 래핑된 CLI 출력, 명령줄 인수, 인증 상태 또는 네트워크 설정을 확인하세요.",
+    empty_trace_count: "캡처된 API 요청: 0",
+    empty_trace_hint: "이는 실제 빈 실행이며 viewer 손상이나 파일 미로드가 아닙니다.",
+    turn: "턴",
+    tok: "tok",
+    btn_request_json: "요청 JSON",
+    btn_curl: "cURL",
+    btn_diff: "이전과 비교",
+    export_jsonl: "JSONL 내보내기",
+    export_log: "로그 내보내기",
+    section_system: "시스템 프롬프트",
+    section_messages: "메시지",
+    section_tools: "도구",
+    section_context: "요청 컨텍스트",
+    section_response: "응답",
+    section_usage: "토큰 사용량",
+    section_sse: "SSE 이벤트",
+    section_json: "전체 JSON",
+    section_metadata: "메타데이터",
+    tab_default: "기본",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "보기 좋게",
+    copy: "복사",
+    copied: "복사됨!",
+    params: "매개변수",
+    required: "필수",
+    tok_input: "입력",
+    tok_output: "출력",
+    tok_cache_read: "캐시 읽기",
+    tok_cache_create: "캐시 생성",
+    empty_state: "선택한 경로에 항목이 없습니다",
+    no_prev: "이전 요청 없음",
+    no_content: "내용 없음",
+    no_messages: "두 요청 모두 메시지 없음",
+    response_context_only: "응답 출력이 캡처되지 않았습니다. 현재 요청 컨텍스트만 표시합니다.",
+    continuation_title: "상태 저장 Responses 이어가기",
+    continuation_message: "이 요청에는 previous_response_id가 있지만 사용자 메시지 기록이 캡처되지 않았습니다. Responses input은 비어 있거나 도구 결과 같은 이어가기 항목만 포함할 수 있으므로 누락된 프롬프트/기록은 서버 측 상태나 이전에 캡처되지 않은 프레임에 있을 수 있습니다.",
+    diff_unchanged: "개의 이전 메시지 변경 없음",
+    diff_msg_range: "메시지 #1 ~ #",
+    diff_new: "신규",
+    diff_removed: "삭제",
+    diff_added: "추가",
+    diff_changed: "변경",
+    diff_no_change: "변경 없음",
+    diff_unchanged_lbl: "변경 없음",
+    diff_system: "시스템 프롬프트",
+    diff_tools: "도구",
+    diff_params: "매개변수",
+    diff_chars: "자",
+    diff_tools_unchanged: "개 도구, 변경 없음",
+    diff_trailing: "마지막 메시지 변경 없음",
+    badge_messages: "개 메시지",
+    badge_tools: "개 도구",
+    badge_events: "개 이벤트",
+    search_placeholder: "메시지, 도구, 프롬프트 검색...",
+    history_date: "날짜:",
+    history_delete_btn: "삭제",
+    history_delete_title: "선택한 기록 날짜의 저장 파일 삭제",
+    history_delete_live_title: "Live 세션 파일은 여기서 삭제할 수 없습니다",
+    history_delete_confirm: "{date}의 저장된 트레이스 파일을 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+    history_delete_working: "삭제 중...",
+    history_delete_done: "{count}개 파일을 삭제했습니다.",
+    history_delete_empty: "{date}의 저장 파일을 찾을 수 없습니다.",
+    history_delete_failed: "삭제 실패: {error}",
+    sort_label: "정렬",
+    sort_model: "모델",
+    sort_turn: "턴",
+    sort_session: "세션",
+    filter_more: "더보기",
+    filter_less: "접기",
+    diff_sys_old: "이전",
+    diff_sys_new: "현재",
+    diff_fallback_warning: "정확한 스레드 일치를 찾을 수 없습니다 — 가장 가까운 동일 모델 요청을 표시",
+    diff_select_target: "비교 대상：",
+    diff_select_auto: "자동"
+  },
+  fr: {
+    title: "claude-tap",
+    stats_turns: "Tours",
+    stats_tokens: "Tokens API cumulés",
+    stats_time: "Durée",
+    stats_tokens_hint: "Somme des tokens d'entrée et de sortie sur les requêtes capturées ; ce n'est pas l'utilisation /context actuelle de Claude Code.",
+    drop_title: "Charger un fichier trace",
+    drop_desc: "Glissez-déposez un fichier .jsonl, ou cliquez pour parcourir",
+    drop_btn: "Choisir un fichier",
+    empty_trace_title: "Aucun appel API capturé",
+    empty_trace_desc: "Ce fichier trace a été généré, mais il ne contient aucune requête API prise en charge. Vérifiez la sortie du CLI enveloppé, les options de commande, l'authentification ou la configuration réseau.",
+    empty_trace_count: "Appels API capturés : 0",
+    empty_trace_hint: "Il s'agit d'une vraie exécution vide, pas d'un viewer cassé ni d'un fichier non chargé.",
+    turn: "Tour",
+    tok: "tok",
+    btn_request_json: "JSON Requête",
+    btn_curl: "cURL",
+    btn_diff: "Comparer avec préc.",
+    export_jsonl: "Exporter JSONL",
+    export_log: "Exporter le journal",
+    section_system: "Prompt système",
+    section_messages: "Messages",
+    section_tools: "Outils",
+    section_context: "Contexte de la requête",
+    section_response: "Réponse",
+    section_usage: "Utilisation des tokens",
+    section_sse: "Événements SSE",
+    section_json: "JSON complet",
+    section_metadata: "Métadonnées",
+    tab_default: "Défaut",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "Lisible",
+    copy: "Copier",
+    copied: "Copié !",
+    params: "Paramètres",
+    required: "requis",
+    tok_input: "Entrée",
+    tok_output: "Sortie",
+    tok_cache_read: "Lecture cache",
+    tok_cache_create: "Création cache",
+    empty_state: "Aucune entrée pour les chemins sélectionnés",
+    no_prev: "Aucune requête précédente",
+    no_content: "Pas de contenu",
+    no_messages: "Aucun message dans les deux requêtes",
+    response_context_only: "Aucune sortie de réponse capturée ; affichage du contexte de requête uniquement.",
+    continuation_title: "Continuation Responses avec état",
+    continuation_message: "Cette requête contient previous_response_id mais aucun historique de messages utilisateur capturé. L'input Responses peut être vide ou ne contenir que des éléments de continuation comme des résultats d'outils; le prompt/l'historique manquant peut donc se trouver dans l'état serveur ou dans une trame antérieure non capturée.",
+    diff_unchanged: "messages précédents inchangés",
+    diff_msg_range: "message #1 ~ #",
+    diff_new: "nouveau",
+    diff_removed: "supprimé",
+    diff_added: "ajouté",
+    diff_changed: "modifié",
+    diff_no_change: "aucun changement",
+    diff_unchanged_lbl: "inchangé",
+    diff_system: "Prompt système",
+    diff_tools: "Outils",
+    diff_params: "Paramètres",
+    diff_chars: "car.",
+    diff_tools_unchanged: "outils, inchangés",
+    diff_trailing: "messages finaux inchangés",
+    badge_messages: "messages",
+    badge_tools: "outils",
+    badge_events: "événements",
+    search_placeholder: "Rechercher messages, outils, prompts...",
+    history_date: "Date :",
+    history_delete_btn: "Supprimer",
+    history_delete_title: "Supprimer les fichiers stockés pour la date d'historique sélectionnée",
+    history_delete_live_title: "Les fichiers de session Live ne peuvent pas être supprimés ici",
+    history_delete_confirm: "Supprimer les fichiers trace stockés pour {date} ? Cette action est irréversible.",
+    history_delete_working: "Suppression...",
+    history_delete_done: "{count} fichiers supprimés.",
+    history_delete_empty: "Aucun fichier stocké trouvé pour {date}.",
+    history_delete_failed: "Échec de la suppression : {error}",
+    sort_label: "Ordre",
+    sort_model: "Modèle",
+    sort_turn: "Tour",
+    sort_session: "Session",
+    filter_more: "plus",
+    filter_less: "Réduire",
+    diff_sys_old: "Précédent",
+    diff_sys_new: "Actuel",
+    diff_fallback_warning: "Aucune correspondance de fil exacte trouvée — affichage de la requête du même modèle la plus proche",
+    diff_select_target: "Comparer avec :",
+    diff_select_auto: "Auto"
+  },
+  ar: {
+    title: "claude-tap",
+    stats_turns: "الأدوار",
+    stats_tokens: "إجمالي رموز API",
+    stats_time: "المدة",
+    stats_tokens_hint: "مجموع رموز الإدخال والإخراج عبر الطلبات الملتقطة؛ وليس استخدام /context الحالي في Claude Code.",
+    drop_title: "تحميل ملف التتبع",
+    drop_desc: "اسحب وأفلت ملف .jsonl هنا، أو انقر للاستعراض",
+    drop_btn: "اختر ملفاً",
+    empty_trace_title: "لم يتم التقاط أي طلبات API",
+    empty_trace_desc: "تم إنشاء ملف التتبع هذا، لكنه لا يحتوي على أي طلبات API مدعومة. تحقق من مخرجات CLI المغلف أو وسائط الأمر أو حالة المصادقة أو إعدادات الشبكة.",
+    empty_trace_count: "طلبات API الملتقطة: 0",
+    empty_trace_hint: "هذه عملية تشغيل فارغة حقيقية، وليست عارضاً معطلاً أو ملفاً غير محمل.",
+    turn: "دور",
+    tok: "رمز",
+    btn_request_json: "JSON الطلب",
+    btn_curl: "cURL",
+    btn_diff: "مقارنة مع السابق",
+    export_jsonl: "تصدير JSONL",
+    export_log: "تصدير السجل",
+    section_system: "موجه النظام",
+    section_messages: "الرسائل",
+    section_tools: "الأدوات",
+    section_context: "سياق الطلب",
+    section_response: "الاستجابة",
+    section_usage: "استخدام الرموز",
+    section_sse: "أحداث SSE",
+    section_json: "JSON الكامل",
+    section_metadata: "البيانات الوصفية",
+    tab_default: "افتراضي",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "منسق",
+    copy: "نسخ",
+    copied: "تم النسخ!",
+    params: "المعاملات",
+    required: "مطلوب",
+    tok_input: "الإدخال",
+    tok_output: "الإخراج",
+    tok_cache_read: "قراءة التخزين",
+    tok_cache_create: "إنشاء التخزين",
+    empty_state: "لا توجد إدخالات للمسارات المحددة",
+    no_prev: "لا يوجد طلب سابق",
+    no_content: "لا يوجد محتوى",
+    no_messages: "لا توجد رسائل في كلا الطلبين",
+    response_context_only: "لم يتم التقاط مخرجات استجابة؛ يتم عرض سياق الطلب فقط.",
+    continuation_title: "استمرار Responses بحالة محفوظة",
+    continuation_message: "يحتوي هذا الطلب على previous_response_id ولكن لا يحتوي على سجل رسائل مستخدم ملتقط. قد يكون Responses input فارغاً أو يحتوي فقط على عناصر استمرار مثل نتائج الأدوات، لذلك قد يكون الموجه/السجل المفقود في حالة الخادم أو في إطار سابق لم يتم التقاطه.",
+    diff_unchanged: "رسالة سابقة بدون تغيير",
+    diff_msg_range: "الرسالة #1 ~ #",
+    diff_new: "جديد",
+    diff_removed: "محذوف",
+    diff_added: "مضاف",
+    diff_changed: "معدّل",
+    diff_no_change: "بدون تغيير",
+    diff_unchanged_lbl: "بدون تغيير",
+    diff_system: "موجه النظام",
+    diff_tools: "الأدوات",
+    diff_params: "المعاملات",
+    diff_chars: "حرف",
+    diff_tools_unchanged: "أداة، بدون تغيير",
+    diff_trailing: "الرسائل الأخيرة بدون تغيير",
+    badge_messages: "رسالة",
+    badge_tools: "أداة",
+    badge_events: "حدث",
+    search_placeholder: "بحث في الرسائل والأدوات والموجهات...",
+    history_date: "التاريخ:",
+    history_delete_btn: "حذف",
+    history_delete_title: "حذف الملفات المخزنة لتاريخ السجل المحدد",
+    history_delete_live_title: "لا يمكن حذف ملفات جلسة Live من هذا التحكم",
+    history_delete_confirm: "هل تريد حذف ملفات التتبع المخزنة لـ {date}؟ لا يمكن التراجع عن هذا الإجراء.",
+    history_delete_working: "جارٍ الحذف...",
+    history_delete_done: "تم حذف {count} ملف.",
+    history_delete_empty: "لم يتم العثور على ملفات مخزنة لـ {date}.",
+    history_delete_failed: "فشل الحذف: {error}",
+    sort_label: "الترتيب",
+    sort_model: "النموذج",
+    sort_turn: "الدور",
+    sort_session: "الجلسة",
+    filter_more: "المزيد",
+    filter_less: "تقليص",
+    diff_sys_old: "السابق",
+    diff_sys_new: "الحالي",
+    diff_fallback_warning: "لم يتم العثور على تطابق دقيق للخيط — عرض أقرب طلب لنفس النموذج",
+    diff_select_target: "مقارنة مع:",
+    diff_select_auto: "تلقائي"
+  },
+  de: {
+    title: "claude-tap",
+    stats_turns: "Runden",
+    stats_tokens: "API-Token gesamt",
+    stats_time: "Dauer",
+    stats_tokens_hint: "Summe aus Eingabe- und Ausgabe-Token über erfasste Anfragen; nicht die aktuelle Claude Code-/context-Nutzung.",
+    drop_title: "Trace-Datei laden",
+    drop_desc: "Ziehen Sie eine .jsonl-Datei hierher, oder klicken Sie zum Auswählen",
+    drop_btn: "Datei wählen",
+    empty_trace_title: "Keine API-Aufrufe erfasst",
+    empty_trace_desc: "Diese Trace-Datei wurde erzeugt, enthält aber keine unterstützten API-Anfragen. Prüfen Sie die Ausgabe des umschlossenen CLI, Befehlsoptionen, Authentifizierung oder Netzwerkeinstellungen.",
+    empty_trace_count: "Erfasste API-Aufrufe: 0",
+    empty_trace_hint: "Dies ist ein echter leerer Lauf, kein defekter Viewer und keine ungeladene Datei.",
+    turn: "Runde",
+    tok: "Tok",
+    btn_request_json: "Anfrage-JSON",
+    btn_curl: "cURL",
+    btn_diff: "Mit vorh. vergleichen",
+    export_jsonl: "JSONL exportieren",
+    export_log: "Protokoll exportieren",
+    section_system: "System-Prompt",
+    section_messages: "Nachrichten",
+    section_tools: "Werkzeuge",
+    section_context: "Anfragekontext",
+    section_response: "Antwort",
+    section_usage: "Token-Nutzung",
+    section_sse: "SSE-Ereignisse",
+    section_json: "Vollständiges JSON",
+    section_metadata: "Metadaten",
+    tab_default: "Standard",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "Lesbar",
+    copy: "Kopieren",
+    copied: "Kopiert!",
+    params: "Parameter",
+    required: "erforderlich",
+    tok_input: "Eingabe",
+    tok_output: "Ausgabe",
+    tok_cache_read: "Cache-Lesen",
+    tok_cache_create: "Cache-Erstellen",
+    empty_state: "Keine Einträge für ausgewählte Pfade",
+    no_prev: "Keine vorherige Anfrage",
+    no_content: "Kein Inhalt",
+    no_messages: "Keine Nachrichten in beiden Anfragen",
+    response_context_only: "Keine Antwortausgabe erfasst; es wird nur der Anfragekontext angezeigt.",
+    continuation_title: "Zustandsbehaftete Responses-Fortsetzung",
+    continuation_message: "Diese Anfrage enthält previous_response_id, aber keinen erfassten Benutzer-Nachrichtenverlauf. Das Responses input kann leer sein oder nur Fortsetzungselemente wie Tool-Ergebnisse enthalten; der fehlende Prompt/Verlauf kann daher im serverseitigen Zustand oder in einem früheren nicht erfassten Frame liegen.",
+    diff_unchanged: "vorherige Nachrichten unverändert",
+    diff_msg_range: "Nachricht #1 ~ #",
+    diff_new: "neu",
+    diff_removed: "entfernt",
+    diff_added: "hinzugefügt",
+    diff_changed: "geändert",
+    diff_no_change: "keine Änderung",
+    diff_unchanged_lbl: "unverändert",
+    diff_system: "System-Prompt",
+    diff_tools: "Werkzeuge",
+    diff_params: "Parameter",
+    diff_chars: "Zeichen",
+    diff_tools_unchanged: "Werkzeuge, unverändert",
+    diff_trailing: "letzte Nachrichten unverändert",
+    badge_messages: "Nachrichten",
+    badge_tools: "Werkzeuge",
+    badge_events: "Ereignisse",
+    search_placeholder: "Nachrichten, Werkzeuge, Prompts suchen...",
+    history_date: "Datum:",
+    history_delete_btn: "Löschen",
+    history_delete_title: "Gespeicherte Dateien für das ausgewählte Verlaufsdatum löschen",
+    history_delete_live_title: "Live-Sitzungsdateien können hier nicht gelöscht werden",
+    history_delete_confirm: "Gespeicherte Trace-Dateien für {date} löschen? Dies kann nicht rückgängig gemacht werden.",
+    history_delete_working: "Löschen...",
+    history_delete_done: "{count} Dateien gelöscht.",
+    history_delete_empty: "Keine gespeicherten Dateien für {date} gefunden.",
+    history_delete_failed: "Löschen fehlgeschlagen: {error}",
+    sort_label: "Reihenfolge",
+    sort_model: "Modell",
+    sort_turn: "Runde",
+    sort_session: "Sitzung",
+    filter_more: "mehr",
+    filter_less: "Weniger",
+    diff_sys_old: "Vorherige",
+    diff_sys_new: "Aktuelle",
+    diff_fallback_warning: "Keine exakte Thread-Übereinstimmung gefunden — zeige nächste Anfrage desselben Modells",
+    diff_select_target: "Vergleichen mit:",
+    diff_select_auto: "Auto"
+  },
+  ru: {
+    title: "claude-tap",
+    stats_turns: "Ходы",
+    stats_tokens: "Всего API-токенов",
+    stats_time: "Время",
+    stats_tokens_hint: "Сумма входных и выходных токенов по захваченным запросам; это не текущее использование /context в Claude Code.",
+    drop_title: "Загрузить файл трассировки",
+    drop_desc: "Перетащите .jsonl файл сюда или нажмите для выбора",
+    drop_btn: "Выбрать файл",
+    empty_trace_title: "API-вызовы не захвачены",
+    empty_trace_desc: "Этот файл трассировки был создан, но не содержит поддерживаемых API-запросов. Проверьте вывод обернутого CLI, параметры команды, состояние аутентификации или сетевые настройки.",
+    empty_trace_count: "Захвачено API-вызовов: 0",
+    empty_trace_hint: "Это реальный пустой запуск, а не сломанный viewer и не незагруженный файл.",
+    turn: "Ход",
+    tok: "ток",
+    btn_request_json: "JSON запроса",
+    btn_curl: "cURL",
+    btn_diff: "Сравнить с пред.",
+    export_jsonl: "Экспорт JSONL",
+    export_log: "Экспорт журнала",
+    section_system: "Системный промпт",
+    section_messages: "Сообщения",
+    section_tools: "Инструменты",
+    section_context: "Контекст запроса",
+    section_response: "Ответ",
+    section_usage: "Использование токенов",
+    section_sse: "SSE-события",
+    section_json: "Полный JSON",
+    section_metadata: "Метаданные",
+    tab_default: "По умолчанию",
+    tab_trace: "Trace",
+    format_json: "JSON",
+    format_yaml: "YAML",
+    format_pretty: "Удобно",
+    copy: "Копировать",
+    copied: "Скопировано!",
+    params: "Параметры",
+    required: "обязательно",
+    tok_input: "Ввод",
+    tok_output: "Вывод",
+    tok_cache_read: "Чтение кэша",
+    tok_cache_create: "Создание кэша",
+    empty_state: "Нет записей для выбранных путей",
+    no_prev: "Нет предыдущего запроса",
+    no_content: "Нет содержимого",
+    no_messages: "Нет сообщений в обоих запросах",
+    response_context_only: "Вывод ответа не захвачен; показан только контекст запроса.",
+    continuation_title: "Состояние продолжения Responses",
+    continuation_message: "Этот запрос содержит previous_response_id, но не содержит захваченной истории пользовательских сообщений. Responses input может быть пустым или содержать только элементы продолжения, например результаты инструментов, поэтому отсутствующий промпт/история могут находиться в серверном состоянии или в более раннем незахваченном фрейме.",
+    diff_unchanged: "предыдущих сообщений без изменений",
+    diff_msg_range: "сообщение #1 ~ #",
+    diff_new: "новое",
+    diff_removed: "удалено",
+    diff_added: "добавлено",
+    diff_changed: "изменено",
+    diff_no_change: "без изменений",
+    diff_unchanged_lbl: "без изменений",
+    diff_system: "Системный промпт",
+    diff_tools: "Инструменты",
+    diff_params: "Параметры",
+    diff_chars: "симв.",
+    diff_tools_unchanged: "инструм., без изменений",
+    diff_trailing: "последние сообщения без изменений",
+    badge_messages: "сообщений",
+    badge_tools: "инструм.",
+    badge_events: "событий",
+    search_placeholder: "Поиск сообщений, инструментов, промптов...",
+    history_date: "Дата:",
+    history_delete_btn: "Удалить",
+    history_delete_title: "Удалить сохраненные файлы для выбранной даты истории",
+    history_delete_live_title: "Файлы Live-сеанса нельзя удалить этим элементом",
+    history_delete_confirm: "Удалить сохраненные файлы трассировки за {date}? Это действие нельзя отменить.",
+    history_delete_working: "Удаление...",
+    history_delete_done: "Удалено файлов: {count}.",
+    history_delete_empty: "Сохраненные файлы за {date} не найдены.",
+    history_delete_failed: "Не удалось удалить: {error}",
+    sort_label: "Порядок",
+    sort_model: "Модель",
+    sort_turn: "Ход",
+    sort_session: "Сессия",
+    filter_more: "ещё",
+    filter_less: "Свернуть",
+    diff_sys_old: "Предыдущий",
+    diff_sys_new: "Текущий",
+    diff_fallback_warning: "Точное совпадение потока не найдено — показан ближайший запрос той же модели",
+    diff_select_target: "Сравнить с:",
+    diff_select_auto: "Авто"
+  }
+};
+
+// src/services/trace/viewer/src/viewer/data/lazy.ts
+var state = {
+  stubs: [],
+  fullEntries: new Map,
+  rawLines: [],
+  isLoaded: false
+};
+function buildStubEntry(line, lineIndex) {
+  try {
+    const entry = JSON.parse(line);
+    const request = entry.request ?? {};
+    const response = entry.response ?? {};
+    return {
+      request_id: entry.request_id ?? `line-${lineIndex}`,
+      turn: String(entry.turn ?? ""),
+      timestamp: entry.timestamp ?? "",
+      model: request.body?.model ?? "unknown",
+      method: request.method ?? "POST",
+      path: request.path ?? "",
+      status: response.status ?? 0,
+      duration_ms: entry.duration_ms ?? 0,
+      transport: entry.transport ?? "unknown",
+      lineIndex,
+      raw: line
+    };
+  } catch {
+    return null;
+  }
+}
+function buildStubList(jsonlContent) {
+  const lines = jsonlContent.trim().split(`
+`);
+  state.rawLines = lines;
+  state.isLoaded = false;
+  state.fullEntries.clear();
+  const stubs = [];
+  for (let i = 0;i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line)
+      continue;
+    const stub = buildStubEntry(line, i);
+    if (stub) {
+      stubs.push(stub);
+    }
+  }
+  state.stubs = stubs;
+  return stubs;
+}
+async function buildStubListFromFile(file) {
+  const text = await file.text();
+  return buildStubList(text);
+}
+var LAZY_THRESHOLD = 50;
+function shouldUseLazyLoading(entryCount) {
+  return entryCount > LAZY_THRESHOLD;
+}
+
+// src/services/trace/viewer/src/viewer/data/sse.ts
+var DEFAULT_CONFIG = {
+  endpoint: "/events",
+  reconnectInterval: 3000,
+  maxReconnects: 10,
+  dedupWindowSize: 1000
+};
+
+class SSEManager {
+  eventSource = null;
+  config;
+  handlers;
+  status = "disconnected";
+  reconnectCount = 0;
+  reconnectTimer = null;
+  seenIds = new Set;
+  records = [];
+  constructor(handlers = {}, config = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.handlers = handlers;
+  }
+  connect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.eventSource) {
+      this.disconnect();
+    }
+    this.setStatus("reconnecting");
+    try {
+      this.eventSource = new EventSource(this.config.endpoint);
+      this.eventSource.onopen = () => {
+        this.reconnectCount = 0;
+        this.setStatus("connected");
+      };
+      this.eventSource.onmessage = (event) => {
+        this.handleMessage(event);
+      };
+      this.eventSource.onerror = (event) => {
+        this.handleError(event);
+      };
+    } catch (error) {
+      console.error("Failed to create EventSource:", error);
+      this.setStatus("disconnected");
+      this.scheduleReconnect();
+    }
+  }
+  disconnect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+    this.setStatus("disconnected");
+  }
+  getStatus() {
+    return this.status;
+  }
+  getRecords() {
+    return [...this.records];
+  }
+  clearRecords() {
+    this.records = [];
+    this.seenIds.clear();
+  }
+  getRecordCount() {
+    return this.records.length;
+  }
+  handleMessage(event) {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "connected") {
+        return;
+      }
+      if (data.type === "refresh") {
+        return;
+      }
+      if (data.request_id && this.seenIds.has(data.request_id)) {
+        return;
+      }
+      if (data.request_id) {
+        this.seenIds.add(data.request_id);
+        this.pruneDedupWindow();
+      }
+      const entry = this.parseRecord(data);
+      if (entry) {
+        this.records.push(entry);
+        this.handlers.onRecord?.(entry);
+      }
+    } catch (error) {
+      console.error("Failed to parse SSE data:", error);
+    }
+  }
+  handleError(event) {
+    this.handlers.onError?.(event);
+    if (this.eventSource?.readyState === EventSource.CLOSED) {
+      this.setStatus("disconnected");
+      this.scheduleReconnect();
+    } else {
+      this.setStatus("reconnecting");
+    }
+  }
+  setStatus(newStatus) {
+    if (this.status !== newStatus) {
+      this.status = newStatus;
+      this.handlers.onStatusChange?.(newStatus);
+    }
+  }
+  scheduleReconnect() {
+    if (this.reconnectCount >= this.config.maxReconnects) {
+      console.warn(`SSE: Max reconnect attempts (${this.config.maxReconnects}) reached`);
+      return;
+    }
+    this.reconnectCount++;
+    const delay = this.config.reconnectInterval * Math.min(this.reconnectCount, 5);
+    console.log(`SSE: Reconnecting in ${delay}ms (attempt ${this.reconnectCount})`);
+    this.reconnectTimer = setTimeout(() => {
+      this.connect();
+    }, delay);
+  }
+  parseRecord(data) {
+    if (!data.request_id) {
+      return null;
+    }
+    return {
+      request_id: data.request_id,
+      turn: String(data.turn ?? ""),
+      timestamp: data.timestamp ?? new Date().toISOString(),
+      duration_ms: data.duration_ms ?? 0,
+      request: {
+        method: data.request?.method ?? "POST",
+        path: data.request?.path ?? "",
+        body: data.request?.body ?? null
+      },
+      response: {
+        status: data.response?.status ?? 0,
+        body: data.response?.body ?? null,
+        usage: data.response?.usage
+      },
+      transport: data.transport ?? "fetch"
+    };
+  }
+  pruneDedupWindow() {
+    if (this.seenIds.size > this.config.dedupWindowSize * 2) {
+      const idsArray = Array.from(this.seenIds);
+      const keepIds = idsArray.slice(-this.config.dedupWindowSize);
+      this.seenIds = new Set(keepIds);
+    }
+  }
+}
+
+// src/services/trace/viewer/src/viewer/search/sidebar-search.ts
+var state2 = {
+  query: "",
+  isActive: false,
+  matchedIds: new Set,
+  currentMatchIndex: -1,
+  matchedIdList: []
+};
+function matchSearch(entry, query) {
+  if (!query)
+    return true;
+  const q = query.toLowerCase();
+  const searchable = [
+    entry.request_id,
+    entry.turn,
+    entry.timestamp,
+    entry.request.method,
+    entry.request.path,
+    entry.request.body?.model ?? "",
+    String(entry.response.status)
+  ].join(" ").toLowerCase();
+  return searchable.includes(q);
+}
+function filterEntries(entries, query) {
+  if (!query)
+    return entries;
+  return entries.filter((entry) => matchSearch(entry, query));
+}
+function onSearch(entries, query, onResults) {
+  state2.query = query;
+  state2.isActive = query.length > 0;
+  state2.currentMatchIndex = -1;
+  const filtered = filterEntries(entries, query);
+  state2.matchedIds = new Set(filtered.map((e) => e.request_id));
+  state2.matchedIdList = filtered.map((e) => e.request_id);
+  onResults?.(filtered);
+  return filtered;
+}
+function clearSearch() {
+  state2.query = "";
+  state2.isActive = false;
+  state2.matchedIds.clear();
+  state2.currentMatchIndex = -1;
+  state2.matchedIdList = [];
+}
+function isMatching(requestId) {
+  if (!state2.isActive)
+    return true;
+  return state2.matchedIds.has(requestId);
+}
+function nextMatch() {
+  if (state2.matchedIdList.length === 0)
+    return null;
+  state2.currentMatchIndex = (state2.currentMatchIndex + 1) % state2.matchedIdList.length;
+  return state2.matchedIdList[state2.currentMatchIndex];
+}
+function prevMatch() {
+  if (state2.matchedIdList.length === 0)
+    return null;
+  state2.currentMatchIndex = (state2.currentMatchIndex - 1 + state2.matchedIdList.length) % state2.matchedIdList.length;
+  return state2.matchedIdList[state2.currentMatchIndex];
+}
+function initSidebarSearch(entries, onSelect, onFilter) {
+  const searchInput = $("#search-input");
+  if (!searchInput)
+    return;
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.trim();
+    onSearch(entries, query, onFilter);
+  });
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const nextId = e.shiftKey ? prevMatch() : nextMatch();
+      if (nextId) {
+        onSelect(nextId);
+      }
+    }
+    if (e.key === "Escape") {
+      searchInput.value = "";
+      clearSearch();
+      onFilter(entries);
+    }
+  });
+}
+
+// src/services/trace/viewer/src/viewer/search/global-search.ts
+var state3 = {
+  query: "",
+  isActive: false,
+  matches: [],
+  currentMatchIndex: -1,
+  entries: []
+};
+function searchInObject(obj, query, path = "") {
+  const matches = [];
+  const q = query.toLowerCase();
+  if (obj === null || obj === undefined) {
+    return matches;
+  }
+  if (typeof obj === "string") {
+    const index = obj.toLowerCase().indexOf(q);
+    if (index !== -1) {
+      const start = Math.max(0, index - 30);
+      const end = Math.min(obj.length, index + query.length + 30);
+      const snippet = (start > 0 ? "..." : "") + obj.substring(start, end) + (end < obj.length ? "..." : "");
+      matches.push({
+        requestId: "",
+        path,
+        snippet,
+        startIndex: index,
+        endIndex: index + query.length
+      });
+    }
+    return matches;
+  }
+  if (typeof obj === "number" || typeof obj === "boolean") {
+    const str = String(obj);
+    if (str.toLowerCase().includes(q)) {
+      matches.push({
+        requestId: "",
+        path,
+        snippet: str,
+        startIndex: 0,
+        endIndex: str.length
+      });
+    }
+    return matches;
+  }
+  if (Array.isArray(obj)) {
+    for (let i = 0;i < obj.length; i++) {
+      const itemMatches = searchInObject(obj[i], query, `${path}[${i}]`);
+      matches.push(...itemMatches);
+    }
+    return matches;
+  }
+  if (typeof obj === "object") {
+    for (const [key, value] of Object.entries(obj)) {
+      const fieldPath = path ? `${path}.${key}` : key;
+      const fieldMatches = searchInObject(value, query, fieldPath);
+      matches.push(...fieldMatches);
+    }
+  }
+  return matches;
+}
+function searchInEntry(entry, query) {
+  const matches = [];
+  if (entry.request.body) {
+    const requestMatches = searchInObject(entry.request.body, query, "request.body");
+    matches.push(...requestMatches);
+  }
+  if (entry.response.body) {
+    const responseMatches = searchInObject(entry.response.body, query, "response.body");
+    matches.push(...responseMatches);
+  }
+  for (const match of matches) {
+    match.requestId = entry.request_id;
+  }
+  return matches;
+}
+function initGlobalSearch(entries, onNavigate) {
+  state3.entries = entries;
+  const overlay = $("#global-search-overlay");
+  const input = $("#global-search-input");
+  const prevBtn = $("#global-search-prev");
+  const nextBtn = $("#global-search-next");
+  const closeBtn = $("#global-search-close");
+  const countSpan = $("#global-search-count");
+  if (!overlay || !input)
+    return;
+  input.addEventListener("input", () => {
+    const query = input.value.trim();
+    if (query) {
+      performSearch(query);
+    } else {
+      clearGlobalSearch();
+    }
+    updateCountDisplay();
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const match = e.shiftKey ? prevGlobalMatch() : nextGlobalMatch();
+      if (match) {
+        onNavigate(match.requestId);
+        updateCountDisplay();
+      }
+    }
+    if (e.key === "Escape") {
+      closeGlobalSearch();
+    }
+  });
+  prevBtn?.addEventListener("click", () => {
+    const match = prevGlobalMatch();
+    if (match) {
+      onNavigate(match.requestId);
+      updateCountDisplay();
+    }
+  });
+  nextBtn?.addEventListener("click", () => {
+    const match = nextGlobalMatch();
+    if (match) {
+      onNavigate(match.requestId);
+      updateCountDisplay();
+    }
+  });
+  closeBtn?.addEventListener("click", () => {
+    closeGlobalSearch();
+  });
+}
+function openGlobalSearch() {
+  const overlay = $("#global-search-overlay");
+  const input = $("#global-search-input");
+  if (overlay) {
+    overlay.style.display = "block";
+  }
+  if (input) {
+    input.focus();
+    input.select();
+  }
+  state3.isActive = true;
+}
+function closeGlobalSearch() {
+  const overlay = $("#global-search-overlay");
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+  clearGlobalSearch();
+  state3.isActive = false;
+}
+function performSearch(query) {
+  state3.query = query;
+  state3.matches = [];
+  state3.currentMatchIndex = -1;
+  for (const entry of state3.entries) {
+    const entryMatches = searchInEntry(entry, query);
+    state3.matches.push(...entryMatches);
+  }
+  if (state3.matches.length > 0) {
+    state3.currentMatchIndex = 0;
+  }
+  return state3.matches;
+}
+function clearGlobalSearch() {
+  state3.query = "";
+  state3.matches = [];
+  state3.currentMatchIndex = -1;
+}
+function nextGlobalMatch() {
+  if (state3.matches.length === 0)
+    return null;
+  state3.currentMatchIndex = (state3.currentMatchIndex + 1) % state3.matches.length;
+  return state3.matches[state3.currentMatchIndex];
+}
+function prevGlobalMatch() {
+  if (state3.matches.length === 0)
+    return null;
+  state3.currentMatchIndex = (state3.currentMatchIndex - 1 + state3.matches.length) % state3.matches.length;
+  return state3.matches[state3.currentMatchIndex];
+}
+function updateCountDisplay() {
+  const countSpan = $("#global-search-count");
+  if (!countSpan)
+    return;
+  if (state3.matches.length === 0 && state3.query) {
+    countSpan.textContent = "No matches";
+  } else if (state3.matches.length > 0) {
+    countSpan.textContent = `${state3.currentMatchIndex + 1} / ${state3.matches.length}`;
+  } else {
+    countSpan.textContent = "";
+  }
+}
+
+// src/services/trace/viewer/src/shared/format.ts
+function fmtDuration(ms) {
+  if (ms < 1000)
+    return `${ms}ms`;
+  if (ms < 60000)
+    return `${(ms / 1000).toFixed(1)}s`;
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor(ms % 60000 / 1000);
+  return `${minutes}m ${seconds}s`;
+}
+function fmtNumber(n) {
+  return n.toLocaleString();
+}
+function fmtTime(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+// src/services/trace/viewer/src/viewer/sidebar/render.ts
+var state4 = {
+  entries: [],
+  selectedId: null,
+  sortMode: "time",
+  pathFilter: null,
+  handlers: { onSelect: () => {} }
+};
+function sortEntries(entries) {
+  return [...entries].sort((a, b) => {
+    const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    if (timeA === 0 && timeB === 0) {
+      return a.request_id.localeCompare(b.request_id);
+    }
+    if (timeA === 0)
+      return 1;
+    if (timeB === 0)
+      return -1;
+    if (timeA === timeB) {
+      return a.request_id.localeCompare(b.request_id);
+    }
+    return timeB - timeA;
+  });
+}
+function groupEntries(entries, mode) {
+  const groups = new Map;
+  for (const entry of entries) {
+    let key;
+    switch (mode) {
+      case "model":
+        key = entry.request.body?.model ?? "unknown";
+        break;
+      case "turn":
+        key = `Turn ${entry.turn || "?"}`;
+        break;
+      case "session":
+        key = entry.request_id.slice(0, 8);
+        break;
+      case "time":
+      default:
+        key = new Date(entry.timestamp).toLocaleDateString();
+        break;
+    }
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(entry);
+  }
+  return groups;
+}
+function filterByPath(entries, pathFilter) {
+  if (!pathFilter)
+    return entries;
+  return entries.filter((e) => e.request.path === pathFilter);
+}
+function createSidebarItem(entry) {
+  const isSelected = entry.request_id === state4.selectedId;
+  const isSearchMatch = isMatching(entry.request_id);
+  const item = document.createElement("div");
+  item.className = `sidebar-item${isSelected ? " selected" : ""}${!isSearchMatch ? " dimmed" : ""}`;
+  item.dataset.id = entry.request_id;
+  const model = entry.request.body?.model ?? "unknown";
+  const method = entry.request.method;
+  const path = entry.request.path;
+  const status = entry.response.status;
+  const duration = entry.duration_ms;
+  item.innerHTML = `
+    <div class="sidebar-item-header">
+      <span class="model-pill">${esc(model)}</span>
+      <span class="status-dot ${status >= 200 && status < 300 ? "success" : "error"}"></span>
+    </div>
+    <div class="sidebar-item-path">${esc(path)}</div>
+    <div class="sidebar-item-meta">
+      <span class="method">${esc(method)}</span>
+      <span class="duration">${fmtDuration(duration)}</span>
+      <span class="time">${fmtTime(entry.timestamp)}</span>
+    </div>
+  `;
+  item.addEventListener("click", () => {
+    state4.selectedId = entry.request_id;
+    state4.handlers.onSelect(entry.request_id);
+    updateSelection();
+  });
+  return item;
+}
+function renderGroup(groupName, entries) {
+  const group = document.createElement("div");
+  group.className = "sidebar-group";
+  const header = document.createElement("div");
+  header.className = "sidebar-group-header";
+  header.textContent = `${groupName} (${entries.length})`;
+  header.addEventListener("click", () => {
+    group.classList.toggle("collapsed");
+  });
+  const items = document.createElement("div");
+  items.className = "sidebar-group-items";
+  for (const entry of entries) {
+    items.appendChild(createSidebarItem(entry));
+  }
+  group.appendChild(header);
+  group.appendChild(items);
+  return group;
+}
+function renderSidebar() {
+  const container = $("#sidebar");
+  if (!container)
+    return;
+  container.innerHTML = "";
+  let entries = sortEntries(state4.entries);
+  entries = filterByPath(entries, state4.pathFilter);
+  if (entries.length === 0) {
+    container.innerHTML = `
+      <div class="sidebar-empty">
+        <p>No trace entries</p>
+      </div>
+    `;
+    return;
+  }
+  const groups = groupEntries(entries, state4.sortMode);
+  for (const [groupName, groupEntries2] of groups) {
+    container.appendChild(renderGroup(groupName, groupEntries2));
+  }
+  scrollToSelected();
+}
+function updateSelection() {
+  const container = $("#sidebar");
+  if (!container)
+    return;
+  container.querySelectorAll(".sidebar-item.selected").forEach((el) => {
+    el.classList.remove("selected");
+  });
+  if (state4.selectedId) {
+    const selectedItem = container.querySelector(`[data-id="${state4.selectedId}"]`);
+    if (selectedItem) {
+      selectedItem.classList.add("selected");
+      selectedItem.scrollIntoView({ block: "nearest" });
+    }
+  }
+}
+function scrollToSelected() {
+  if (!state4.selectedId)
+    return;
+  const container = $("#sidebar");
+  if (!container)
+    return;
+  const selected = container.querySelector(`[data-id="${state4.selectedId}"]`);
+  if (selected) {
+    selected.scrollIntoView({ block: "nearest" });
+  }
+}
+function initSidebar(entries, handlers) {
+  state4.entries = entries;
+  state4.handlers = handlers;
+  state4.selectedId = null;
+  renderSidebar();
+}
+function updateEntries(entries) {
+  state4.entries = entries;
+  renderSidebar();
+}
+function selectEntry(requestId) {
+  state4.selectedId = requestId;
+  state4.handlers.onSelect(requestId);
+  updateSelection();
+}
+function selectNext() {
+  if (state4.entries.length === 0)
+    return null;
+  const currentIndex = state4.entries.findIndex((e) => e.request_id === state4.selectedId);
+  const nextIndex = (currentIndex + 1) % state4.entries.length;
+  const nextEntry = state4.entries[nextIndex];
+  if (nextEntry) {
+    selectEntry(nextEntry.request_id);
+    return nextEntry.request_id;
+  }
+  return null;
+}
+function selectPrev() {
+  if (state4.entries.length === 0)
+    return null;
+  const currentIndex = state4.entries.findIndex((e) => e.request_id === state4.selectedId);
+  const prevIndex = (currentIndex - 1 + state4.entries.length) % state4.entries.length;
+  const prevEntry = state4.entries[prevIndex];
+  if (prevEntry) {
+    selectEntry(prevEntry.request_id);
+    return prevEntry.request_id;
+  }
+  return null;
+}
+function selectFirst() {
+  if (state4.entries.length === 0)
+    return null;
+  const first = state4.entries[0];
+  selectEntry(first.request_id);
+  return first.request_id;
+}
+function selectLast() {
+  if (state4.entries.length === 0)
+    return null;
+  const last = state4.entries[state4.entries.length - 1];
+  selectEntry(last.request_id);
+  return last.request_id;
+}
+
+// src/services/trace/viewer/src/viewer/data/normalize.ts
+function getMessages(request) {
+  if (!request)
+    return [];
+  return request.messages ?? [];
+}
+function extractSystem(request) {
+  if (!request)
+    return "";
+  if (request.system !== undefined) {
+    return request.system;
+  }
+  const systemMessages = (request.messages ?? []).filter((m) => m.role === "system");
+  if (systemMessages.length > 0) {
+    return systemMessages.map((m) => typeof m.content === "string" ? m.content : "").filter(Boolean).join(`
+`);
+  }
+  return "";
+}
+function getRequestTools(request) {
+  if (!request)
+    return [];
+  return request.tools ?? [];
+}
+function getUsage(response) {
+  if (!response)
+    return;
+  return response.usage;
+}
+function getResponseOutput(response) {
+  if (!response)
+    return [];
+  if (response.content && Array.isArray(response.content)) {
+    return response.content;
+  }
+  const choices = response.choices;
+  if (Array.isArray(choices) && choices.length > 0) {
+    const message = choices[0].message;
+    if (message) {
+      if (typeof message.content === "string") {
+        return [{ type: "text", text: message.content }];
+      }
+      if (Array.isArray(message.content)) {
+        return message.content;
+      }
+    }
+  }
+  return [];
+}
+function extractText(blocks) {
+  return blocks.filter((b) => b.type === "text" && b.text).map((b) => b.text).join(`
+`);
+}
+function extractToolUses(blocks) {
+  return blocks.filter((b) => b.type === "tool_use");
+}
+function extractThinking(blocks) {
+  return blocks.filter((b) => b.type === "thinking" && b.thinking).map((b) => b.thinking).join(`
+`);
+}
+
+// src/services/trace/viewer/src/viewer/detail/panel.ts
+var state5 = {
+  currentEntry: null,
+  handlers: {}
+};
+function renderRequestOverview(entry) {
+  const request = entry.request;
+  const response = entry.response;
+  const model = request.body?.model ?? "unknown";
+  const status = response.status;
+  const statusClass = status >= 200 && status < 300 ? "success" : "error";
+  return `
+    <div class="detail-overview">
+      <div class="detail-overview-header">
+        <span class="model-pill">${esc(model)}</span>
+        <span class="status-pill ${statusClass}">${status}</span>
+        <span class="duration-pill">${fmtDuration(entry.duration_ms)}</span>
+      </div>
+      <div class="detail-overview-meta">
+        <div class="meta-row">
+          <span class="meta-label">Method</span>
+          <span class="meta-value">${esc(request.method)}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Path</span>
+          <span class="meta-value">${esc(request.path)}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Request ID</span>
+          <span class="meta-value">${esc(entry.request_id)}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Timestamp</span>
+          <span class="meta-value">${esc(entry.timestamp)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+function renderSystemPrompt(request) {
+  const system = extractSystem(request);
+  if (!system)
+    return "";
+  const text = typeof system === "string" ? system : system.map((b) => b.text).join(`
+`);
+  return `
+    <div class="detail-section">
+      <div class="detail-section-header">
+        <span class="section-title">System Prompt</span>
+        <span class="section-count">${text.length} chars</span>
+      </div>
+      <div class="detail-section-content">
+        <pre class="code-block">${esc(text)}</pre>
+      </div>
+    </div>
+  `;
+}
+function renderMessages(request) {
+  const messages = getMessages(request);
+  if (messages.length === 0)
+    return "";
+  const messageHtml = messages.map((msg, i) => {
+    const role = msg.role;
+    const roleClass = role === "user" ? "user" : role === "assistant" ? "assistant" : "system";
+    let content = "";
+    if (typeof msg.content === "string") {
+      content = msg.content;
+    } else if (Array.isArray(msg.content)) {
+      content = extractText(msg.content);
+    }
+    return `
+      <div class="message-item ${roleClass}">
+        <div class="message-header">
+          <span class="message-role">${esc(role)}</span>
+          <span class="message-index">#${i + 1}</span>
+        </div>
+        <div class="message-content">
+          <pre class="code-block">${esc(content)}</pre>
+        </div>
+      </div>
+    `;
+  }).join("");
+  return `
+    <div class="detail-section">
+      <div class="detail-section-header">
+        <span class="section-title">Messages</span>
+        <span class="section-count">${messages.length} messages</span>
+      </div>
+      <div class="detail-section-content">
+        ${messageHtml}
+      </div>
+    </div>
+  `;
+}
+function renderTools(request) {
+  const tools = getRequestTools(request);
+  if (tools.length === 0)
+    return "";
+  const toolHtml = tools.map((tool) => `
+    <div class="tool-item">
+      <div class="tool-header">
+        <span class="tool-name">${esc(tool.name)}</span>
+      </div>
+      ${tool.description ? `<div class="tool-description">${esc(tool.description)}</div>` : ""}
+    </div>
+  `).join("");
+  return `
+    <div class="detail-section">
+      <div class="detail-section-header">
+        <span class="section-title">Tools</span>
+        <span class="section-count">${tools.length} tools</span>
+      </div>
+      <div class="detail-section-content">
+        ${toolHtml}
+      </div>
+    </div>
+  `;
+}
+function renderResponseContent(response) {
+  const output = getResponseOutput(response);
+  if (output.length === 0)
+    return "";
+  const textBlocks = output.filter((b) => b.type === "text");
+  const toolUseBlocks = extractToolUses(output);
+  const thinkingText = extractThinking(output);
+  let html = "";
+  if (thinkingText) {
+    html += `
+      <div class="detail-section thinking-section">
+        <div class="detail-section-header">
+          <span class="section-title">Thinking</span>
+          <span class="section-count">${thinkingText.length} chars</span>
+        </div>
+        <div class="detail-section-content">
+          <pre class="code-block thinking">${esc(thinkingText)}</pre>
+        </div>
+      </div>
+    `;
+  }
+  if (textBlocks.length > 0) {
+    const text = extractText(textBlocks);
+    html += `
+      <div class="detail-section">
+        <div class="detail-section-header">
+          <span class="section-title">Response</span>
+          <span class="section-count">${text.length} chars</span>
+        </div>
+        <div class="detail-section-content">
+          <pre class="code-block">${esc(text)}</pre>
+        </div>
+      </div>
+    `;
+  }
+  if (toolUseBlocks.length > 0) {
+    const toolHtml = toolUseBlocks.map((tool) => `
+      <div class="tool-use-item">
+        <div class="tool-use-header">
+          <span class="tool-name">${esc(tool.name ?? "")}</span>
+          <span class="tool-id">${esc(tool.id ?? "")}</span>
+        </div>
+        <div class="tool-use-input">
+          <pre class="code-block">${esc(JSON.stringify(tool.input, null, 2))}</pre>
+        </div>
+      </div>
+    `).join("");
+    html += `
+      <div class="detail-section">
+        <div class="detail-section-header">
+          <span class="section-title">Tool Uses</span>
+          <span class="section-count">${toolUseBlocks.length} calls</span>
+        </div>
+        <div class="detail-section-content">
+          ${toolHtml}
+        </div>
+      </div>
+    `;
+  }
+  return html;
+}
+function renderUsage(response) {
+  const usage = getUsage(response);
+  if (!usage)
+    return "";
+  return `
+    <div class="detail-section usage-section">
+      <div class="detail-section-header">
+        <span class="section-title">Token Usage</span>
+      </div>
+      <div class="detail-section-content">
+        <div class="usage-grid">
+          <div class="usage-item">
+            <span class="usage-label">Input</span>
+            <span class="usage-value">${fmtNumber(usage.input_tokens)}</span>
+          </div>
+          <div class="usage-item">
+            <span class="usage-label">Output</span>
+            <span class="usage-value">${fmtNumber(usage.output_tokens)}</span>
+          </div>
+          ${usage.cache_creation_input_tokens ? `
+            <div class="usage-item">
+              <span class="usage-label">Cache Write</span>
+              <span class="usage-value">${fmtNumber(usage.cache_creation_input_tokens)}</span>
+            </div>
+          ` : ""}
+          ${usage.cache_read_input_tokens ? `
+            <div class="usage-item">
+              <span class="usage-label">Cache Read</span>
+              <span class="usage-value">${fmtNumber(usage.cache_read_input_tokens)}</span>
+            </div>
+          ` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+function renderDetail(entry) {
+  const container = $("#detail");
+  if (!container)
+    return;
+  if (!entry) {
+    container.innerHTML = `
+      <div class="detail-empty">
+        <p>Select a trace entry to view details</p>
+      </div>
+    `;
+    return;
+  }
+  state5.currentEntry = entry;
+  const html = [
+    renderRequestOverview(entry),
+    renderSystemPrompt(entry.request.body),
+    renderMessages(entry.request.body),
+    renderTools(entry.request.body),
+    renderResponseContent(entry.response.body),
+    renderUsage(entry.response.body)
+  ].filter(Boolean).join("");
+  container.innerHTML = html;
+}
+function initDetail(handlers = {}) {
+  state5.handlers = handlers;
+  renderDetail(null);
+}
+function updateDetail(entry) {
+  renderDetail(entry);
+}
+
+// src/services/trace/viewer/src/viewer/main.ts
+var MAX_DEDUP_ENTRIES = 1000;
+var state6 = {
+  mode: "file-drop",
+  entries: [],
+  selectedId: null,
+  sseManager: null
+};
+function dedupEntries(entries) {
+  const seen = new Set;
+  const result = [];
+  for (const entry of entries) {
+    if (!seen.has(entry.request_id)) {
+      seen.add(entry.request_id);
+      result.push(entry);
+    }
+  }
+  if (result.length > MAX_DEDUP_ENTRIES) {
+    return result.slice(-MAX_DEDUP_ENTRIES);
+  }
+  return result;
+}
+function detectMode() {
+  if (typeof window._traceData !== "undefined") {
+    return "embedded";
+  }
+  if (typeof window.EMBEDDED_TRACE_META !== "undefined") {
+    return "lazy";
+  }
+  if (typeof window.LIVE_MODE !== "undefined" && window.LIVE_MODE) {
+    return "live";
+  }
+  return "file-drop";
+}
+function initCommonUi() {
+  initTheme();
+  const themeBtn = $("#theme-toggle");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", toggleTheme);
+  }
+  initI18n(viewer_i18n_default);
+  if (isI18nEmpty()) {
+    const langSelect = document.getElementById("lang-select");
+    if (langSelect)
+      langSelect.style.display = "none";
+  } else {
+    renderLangSelect("lang-select");
+  }
+  initExportButton();
+}
+function initViewerPanels() {
+  initDetail({
+    onCopy: (text) => {
+      navigator.clipboard.writeText(text).catch(console.error);
+    }
+  });
+  initSidebar(state6.entries, {
+    onSelect: (requestId) => {
+      state6.selectedId = requestId;
+      const entry = state6.entries.find((e) => e.request_id === requestId);
+      if (entry) {
+        updateDetail(entry);
+      }
+    }
+  });
+  initSidebarSearch(state6.entries, (requestId) => {
+    selectEntry(requestId);
+  }, (filtered) => {
+    updateEntries(filtered);
+  });
+  initGlobalSearch(state6.entries, (requestId) => {
+    selectEntry(requestId);
+  });
+}
+function initKeyboardNavigation() {
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+      e.preventDefault();
+      openGlobalSearch();
+    }
+    if (e.key === "Escape") {
+      closeGlobalSearch();
+    }
+    const target = e.target;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+      return;
+    }
+    switch (e.key) {
+      case "j":
+        e.preventDefault();
+        selectNext();
+        break;
+      case "k":
+        e.preventDefault();
+        selectPrev();
+        break;
+      case "Home":
+        e.preventDefault();
+        selectFirst();
+        break;
+      case "End":
+        e.preventDefault();
+        selectLast();
+        break;
+      case "PageDown":
+        e.preventDefault();
+        for (let i = 0;i < 10; i++)
+          selectNext();
+        break;
+      case "PageUp":
+        e.preventDefault();
+        for (let i = 0;i < 10; i++)
+          selectPrev();
+        break;
+    }
+  });
+}
+function updateLiveStatus(status) {
+  const stats = $("#stats");
+  if (!stats)
+    return;
+  const statusHtml = `<span class="stat-item">
+    <span class="stat-dot" style="background:${status === "connected" ? "var(--green)" : "var(--red)"}"></span>
+    <span>${status}</span>
+  </span>`;
+  const existing = stats.querySelector(".live-status");
+  if (existing) {
+    existing.innerHTML = statusHtml;
+  } else {
+    const span = document.createElement("span");
+    span.className = "live-status";
+    span.innerHTML = statusHtml;
+    stats.appendChild(span);
+  }
+}
+function showMainArea() {
+  const mainArea = $("#main-area");
+  const dropZone = $("#drop-zone");
+  if (mainArea)
+    mainArea.style.display = "flex";
+  if (dropZone)
+    dropZone.style.display = "none";
+}
+async function loadHistoricalData() {
+  try {
+    const response = await fetch("/api/sessions");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const sessions = await response.json();
+    if (!sessions || sessions.length === 0) {
+      return [];
+    }
+    const latestSession = sessions[0];
+    const tracesResponse = await fetch(`/api/traces/${latestSession.id}`);
+    if (!tracesResponse.ok) {
+      throw new Error(`HTTP ${tracesResponse.status}`);
+    }
+    const traces = await tracesResponse.json();
+    return Array.isArray(traces) ? traces : [];
+  } catch (error) {
+    console.error("Failed to load historical data:", error);
+    const sidebar = $("#sidebar");
+    if (sidebar) {
+      sidebar.innerHTML = '<div class="error-banner">Failed to load history. Waiting for live traces...</div>';
+    }
+    return [];
+  }
+}
+async function exportSelfContainedHtml() {
+  if (state6.entries.length === 0) {
+    alert("No trace data to export");
+    return;
+  }
+  try {
+    const resp = await fetch("/");
+    if (!resp.ok)
+      throw new Error(`Failed to fetch template: ${resp.status}`);
+    const template = await resp.text();
+    const jsonStr = JSON.stringify(state6.entries);
+    const dataBase64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    const exportHtml = template.replace("</head>", `<script>window._traceData = JSON.parse(decodeURIComponent(escape(atob('${dataBase64}'))));<` + `/script></head>`);
+    const blob = new Blob([exportHtml], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `trace-export-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Export failed:", err);
+    alert(`Export failed: ${err}`);
+  }
+}
+function initExportButton() {
+  const actions = $("#viewer-actions");
+  if (!actions)
+    return;
+  const btn = document.createElement("button");
+  btn.className = "act-btn";
+  btn.textContent = "Export HTML";
+  btn.title = "Export as self-contained HTML";
+  btn.addEventListener("click", exportSelfContainedHtml);
+  actions.appendChild(btn);
+}
+function initFileDropZone() {
+  const dropZone = $("#drop-zone");
+  if (!dropZone)
+    return;
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.add("drag-over");
+  });
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("drag-over");
+  });
+  dropZone.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove("drag-over");
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await loadFile(files[0]);
+    }
+  });
+}
+async function loadFile(file) {
+  const text = await file.text();
+  const lines = text.trim().split(`
+`);
+  if (shouldUseLazyLoading(lines.length)) {
+    const stubs = buildStubListFromFile(file);
+    state6.entries = stubs.map((s) => ({
+      request_id: s.request_id,
+      turn: s.turn,
+      timestamp: s.timestamp,
+      duration_ms: s.duration_ms,
+      request: { method: s.method, path: s.path, body: null },
+      response: { status: s.status, body: null },
+      transport: s.transport
+    }));
+  } else {
+    state6.entries = lines.filter((line) => line.trim()).map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  }
+  if (state6.entries.length === 0) {
+    console.warn("No valid entries found in file");
+    return;
+  }
+  showMainArea();
+  initViewerPanels();
+  renderSidebar();
+}
+async function initLiveMode() {
+  const sidebar = $("#sidebar");
+  if (sidebar) {
+    sidebar.innerHTML = '<div class="loading">Loading history...</div>';
+  }
+  const historicalData = await loadHistoricalData();
+  state6.entries = historicalData;
+  state6.sseManager = new SSEManager({
+    onRecord: (entry) => {
+      if (!state6.entries.some((e) => e.request_id === entry.request_id)) {
+        state6.entries.push(entry);
+        state6.entries = dedupEntries(state6.entries);
+        updateEntries(state6.entries);
+      }
+    },
+    onStatusChange: (status) => {
+      updateLiveStatus(status);
+    },
+    onError: (error) => {
+      console.error("SSE error:", error);
+    }
+  });
+  state6.sseManager.connect();
+  showMainArea();
+  initViewerPanels();
+  renderSidebar();
+}
+function initEmbeddedMode() {
+  const data = window._traceData;
+  if (data && Array.isArray(data)) {
+    state6.entries = data;
+    showMainArea();
+    initViewerPanels();
+    renderSidebar();
+  }
+}
+function initLazyMode() {
+  const meta = window.EMBEDDED_TRACE_META;
+  if (meta && Array.isArray(meta)) {
+    state6.entries = meta;
+    showMainArea();
+    initViewerPanels();
+    renderSidebar();
+  }
+}
+function main() {
+  initCommonUi();
+  initKeyboardNavigation();
+  const mode = detectMode();
+  state6.mode = mode;
+  console.log(`Viewer mode: ${mode}`);
+  switch (mode) {
+    case "live":
+      initLiveMode();
+      break;
+    case "embedded":
+      initEmbeddedMode();
+      break;
+    case "lazy":
+      initLazyMode();
+      break;
+    case "file-drop":
+    default:
+      initFileDropZone();
+      break;
+  }
+}
+main();
+
+</script>
+</body>
+</html>

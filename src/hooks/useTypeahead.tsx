@@ -904,8 +904,8 @@ export function useTypeahead({
     }
     // Clear the dismissed state when input changes
     dismissedForInputRef.current = null;
-    void updateSuggestions(input);
-  }, [input, updateSuggestions]);
+    void updateSuggestions(input, cursorOffset);
+  }, [input, cursorOffset, updateSuggestions]);
 
   // Handle tab key press - complete suggestions or trigger file suggestions
   const handleTab = useCallback(async () => {

@@ -93,6 +93,7 @@ import { executePostSamplingHooks } from './utils/hooks/postSamplingHooks.js'
 import { executeStopFailureHooks } from './utils/hooks.js'
 import type { QuerySource } from './constants/querySource.js'
 import { createDumpPromptsFetch } from './services/api/dumpPrompts.js'
+import { isTraceEnabled, createTraceFetch } from './services/trace/traceRecorder.js'
 import { StreamingToolExecutor } from './services/tools/StreamingToolExecutor.js'
 import { queryCheckpoint } from './utils/queryProfiler.js'
 import { runTools } from './services/tools/toolOrchestration.js'
@@ -585,8 +586,20 @@ async function* queryLoop(
     // instead of all request bodies from the session (~500MB for long sessions).
     // Note: agentId is effectively constant during a query() call - it only changes
     // between queries (e.g., /clear command or session resume).
-    const dumpPromptsFetch = config.gates.isAnt
+    // Trace 启用条件：Anthropic 内部用户 或 使用 --trace 参数
+    const shouldCreateDumpPromptsFetch = config.gates.isAnt || isTraceEnabled()
+    const dumpPromptsFetch = shouldCreateDumpPromptsFetch
       ? createDumpPromptsFetch(toolUseContext.agentId ?? config.sessionId)
+      : undefined
+
+    // Create trace fetch wrapper (wraps dumpPromptsFetch as inner fetch)
+    const traceFetch = isTraceEnabled()
+      ? createTraceFetch(
+          toolUseContext.agentId ?? config.sessionId,
+          undefined,
+          {},
+          dumpPromptsFetch
+        )
       : undefined
 
     // Block if we've hit the hard blocking limit (only applies when auto-compact is OFF)
@@ -685,7 +698,7 @@ async function* queryLoop(
               hasAppendSystemPrompt:
                 !!toolUseContext.options.appendSystemPrompt,
               maxOutputTokensOverride,
-              fetchOverride: dumpPromptsFetch,
+              fetchOverride: traceFetch ?? dumpPromptsFetch,
               mcpTools: appState.mcp.tools,
               hasPendingMcpServers: appState.mcp.clients.some(
                 c => c.type === 'pending',
