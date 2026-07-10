@@ -14,6 +14,18 @@ if (typeof MACRO === 'undefined') {
 // eslint-disable-next-line custom-rules/no-top-level-side-effects
 process.env.COREPACK_ENABLE_AUTO_PIN = '0';
 
+// Detect terminal columns early so child processes (HUD plugins, hooks, etc.)
+// can read COLUMNS for line-wrapping and layout before subprocessEnv() is called.
+// eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
+if (!process.env.COLUMNS) {
+  try {
+    const { detectTerminalColumns } = require('../utils/subprocessEnv.js');
+    process.env.COLUMNS = String(detectTerminalColumns());
+  } catch {
+    // Fallback: will be detected later by subprocessEnv()
+  }
+}
+
 // Set max heap size for child processes in CCR environments (containers have 16GB)
 // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level, custom-rules/safe-env-boolean-check
 if (process.env.CLAUDE_CODE_REMOTE === 'true') {
@@ -292,6 +304,39 @@ async function main(): Promise<void> {
   // option building (not just inside the action handler).
   if (args.includes('--bare')) {
     process.env.CLAUDE_CODE_SIMPLE = '1';
+  }
+
+  // --trace: enable trace recording and viewer
+  if (args.includes('--trace')) {
+    process.env.TRACE_ENABLED = 'true'
+    // --no-live: enable trace recording but don't start viewer
+    if (args.includes('--no-live')) {
+      process.env.TRACE_NO_LIVE = 'true'
+    } else {
+      // Start viewer service (background, non-blocking)
+      const { startTraceServer, openBrowser } = await import('../services/trace/traceServer.js')
+      try {
+        const server = await startTraceServer({
+          onPort: (_port) => {
+            // trace 静默录制，不输出到终端
+          }
+        })
+        await openBrowser(`http://127.0.0.1:${server.port}`)
+      } catch (error) {
+        const { traceLogger } = await import('../services/trace/traceLogger.js')
+        traceLogger.error('Failed to start trace viewer', error)
+      }
+    }
+  }
+
+  // trace subcommands
+  if (args[0] === 'trace') {
+    profileCheckpoint('cli_trace_path')
+    const { enableConfigs } = await import('../utils/config.js')
+    enableConfigs()
+    const { traceCommand } = await import('../services/trace/traceCommands.js')
+    await traceCommand(args.slice(1))
+    return
   }
 
   // No special flags detected, load and run the full CLI

@@ -500,6 +500,7 @@ export function getSessionProjectDir(): string | null {
 export function getOriginalCwd(): string {
   return STATE.originalCwd
 }
+export function isReplBridgeActive(): boolean { return false }
 
 /**
  * Get the stable project root directory.
