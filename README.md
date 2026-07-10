@@ -12,6 +12,7 @@
 ### 轻量级本地 AI 编程助手
 
 [![Bun](https://img.shields.io/badge/Bun-1.3.11+-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-1ba784?style=for-the-badge)](LICENSE)
 
@@ -42,15 +43,51 @@
 
 ### 前置要求
 
-- [Bun](https://bun.sh) >= 1.3.11
+- [Bun](https://bun.sh) >= 1.3.11 或 [Node.js](https://nodejs.org) >= 20.x
 - [Git](https://git-scm.com)
 
-### 安装构建
+### 安装构建（Bun 模式）
 
 ```bash
 git clone https://github.com/txl16095/MiniClaude.git && cd MiniClaude
 bun install
 bun run build
+```
+
+### 使用 Node.js（可选）
+
+MiniClaude 同时支持 Bun 和 Node.js 运行环境。
+
+**通过 npm 安装（推荐）：**
+
+```bash
+# 全局安装
+npm install -g miniclaude
+
+# 本地安装
+npm install miniclaude
+```
+
+**离线安装：**
+
+1. 从 Releases 下载离线包 `miniclaude-{version}.tgz`
+2. 运行安装命令：
+
+```bash
+# 本地安装
+npm install ./miniclaude-{version}.tgz
+
+# 全局安装
+npm install -g ./miniclaude-{version}.tgz
+```
+
+**从源码构建（Node.js 模式）：**
+
+```bash
+git clone https://github.com/txl16095/MiniClaude.git && cd MiniClaude
+bun install
+bun run build:node
+node dist/miniclaude-node.js --version
 ```
 
 ### 配置文件

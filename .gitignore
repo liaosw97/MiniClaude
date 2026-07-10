@@ -8,6 +8,8 @@ openclaw/
 *.exe
 cli.exe
 cli-dev.exe
+src/services/trace/viewer/viewer.html
+src/services/trace/viewer/dashboard.html
 
 # 环境配置
 .env
@@ -42,6 +44,7 @@ bun-debug.log*
 .cache/
 *.bun-build
 .*.bun-build
+*.stackdump
 
 # 开发计划文档（内部使用）
 docs/

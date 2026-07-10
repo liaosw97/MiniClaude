@@ -6,3 +6,4 @@ export type EnvironmentResource = any
 export async function fetchEnvironments(): Promise<EnvironmentResource[]> {
   return []
 }
+export async function createDefaultCloudEnvironment(): Promise<EnvironmentResource | null> { return null }

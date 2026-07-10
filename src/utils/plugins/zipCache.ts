@@ -47,6 +47,7 @@ import { parseZipModes, unzipFile } from '../dxt/zip.js'
 import { isEnvTruthy } from '../envUtils.js'
 import { getFsImplementation } from '../fsOperations.js'
 import { expandTilde } from '../permissions/pathValidation.js'
+import { loadFflate } from '../../compat/native/fflate-adapter.js'
 import type { MarketplaceSource } from './schemas.js'
 
 /**
@@ -220,7 +221,11 @@ export async function createZipFromDirectory(
   const visited = new Set<string>()
   await collectFilesForZip(sourceDir, '', files, visited)
 
-  const { zipSync } = await import('fflate')
+  const fflate = await loadFflate()
+  if (!fflate) {
+    throw new Error('fflate is not available. Install: npm install fflate')
+  }
+  const { zipSync } = fflate
   const zipData = zipSync(files, { level: 6 })
   logForDebugging(
     `Created ZIP from ${sourceDir}: ${Object.keys(files).length} files, ${zipData.length} bytes`,

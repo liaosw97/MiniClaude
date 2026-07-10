@@ -49,19 +49,19 @@ export function modelSupportsEffort(model: string): boolean {
 }
 
 // @[MODEL LAUNCH]: Add the new model to the allowlist if it supports 'max' effort.
-// Per API docs, 'max' is Opus 4.6 only for public models — other models return an error.
+// MiniClaude: 'max' effort is supported for all models.
 export function modelSupportsMaxEffort(model: string): boolean {
   const supported3P = get3PModelCapabilityOverride(model, 'max_effort')
   if (supported3P !== undefined) {
     return supported3P
   }
-  if (model.toLowerCase().includes('opus-4-6')) {
-    return true
-  }
+
   if (process.env.USER_TYPE === 'ant' && resolveAntModel(model)) {
     return true
   }
-  return false
+  
+  // MiniClaude: 支持所有模型使用 max effort
+  return true
 }
 
 export function isEffortLevel(value: string): value is EffortLevel {
@@ -88,19 +88,22 @@ export function parseEffortValue(value: unknown): EffortValue | undefined {
 
 /**
  * Numeric values are model-default only and not persisted.
- * 'max' is session-scoped for external users (ants can persist it).
+ * MiniClaude: 'max' can be persisted for all users.
  * Write sites call this before saving to settings so the Zod schema
  * (which only accepts string levels) never rejects a write.
  */
 export function toPersistableEffort(
   value: EffortValue | undefined,
 ): EffortLevel | undefined {
-  if (value === 'low' || value === 'medium' || value === 'high') {
-    return value
-  }
+
   if (value === 'max' && process.env.USER_TYPE === 'ant') {
     return value
   }
+
+  if (value === 'low' || value === 'medium' || value === 'high' || value === 'max') {
+    return value
+  }
+
   return undefined
 }
 
@@ -230,7 +233,7 @@ export function getEffortLevelDescription(level: EffortLevel): string {
     case 'high':
       return 'Comprehensive implementation with extensive testing and documentation'
     case 'max':
-      return 'Maximum capability with deepest reasoning (Opus 4.6 only)'
+      return 'Maximum capability with deepest reasoning'
   }
 }
 

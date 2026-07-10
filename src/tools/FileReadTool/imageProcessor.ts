@@ -1,5 +1,6 @@
 import type { Buffer } from 'buffer'
 import { isInBundledMode } from '../../utils/bundledMode.js'
+import { loadSharp } from '../../compat/native/sharp-adapter.js'
 
 export type SharpInstance = {
   metadata(): Promise<{ width: number; height: number; format: string }>
@@ -57,11 +58,13 @@ export async function getImageProcessor(): Promise<SharpFunction> {
   }
 
   // Use sharp for non-bundled builds or as fallback.
+  // loadSharp() has built-in try-catch and returns null if sharp is not available.
+  const sharpInstance = await loadSharp()
+  if (!sharpInstance) {
+    throw new Error('sharp is not available. Install: npm install sharp')
+  }
   // Single structural cast: our SharpFunction is a subset of sharp's actual type surface.
-  const imported = (await import(
-    'sharp'
-  )) as unknown as MaybeDefault<SharpFunction>
-  const sharp = unwrapDefault(imported)
+  const sharp = sharpInstance as unknown as SharpFunction
   imageProcessorModule = { default: sharp }
   return sharp
 }
@@ -76,19 +79,14 @@ export async function getImageCreator(): Promise<SharpCreator> {
     return imageCreatorModule.default
   }
 
-  const imported = (await import(
-    'sharp'
-  )) as unknown as MaybeDefault<SharpCreator>
-  const sharp = unwrapDefault(imported)
+  // loadSharp() has built-in try-catch and returns null if sharp is not available.
+  const sharpInstance = await loadSharp()
+  if (!sharpInstance) {
+    throw new Error('sharp is not available. Install: npm install sharp')
+  }
+  // Single structural cast: our SharpCreator is a subset of sharp's actual type surface.
+  const sharp = sharpInstance as unknown as SharpCreator
   imageCreatorModule = { default: sharp }
   return sharp
 }
 
-// Dynamic import shape varies by module interop mode — ESM yields { default: fn }, CJS yields fn directly.
-type MaybeDefault<T> = T | { default: T }
-
-function unwrapDefault<T extends (...args: never[]) => unknown>(
-  mod: MaybeDefault<T>,
-): T {
-  return typeof mod === 'function' ? mod : mod.default
-}

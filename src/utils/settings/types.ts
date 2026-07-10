@@ -704,7 +704,7 @@ export const SettingsSchema = lazySchema(() =>
         .enum(
           process.env.USER_TYPE === 'ant'
             ? ['low', 'medium', 'high', 'max']
-            : ['low', 'medium', 'high'],
+            : ['low', 'medium', 'high', 'max'],
         )
         .optional()
         .catch(undefined)

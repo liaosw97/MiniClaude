@@ -3,6 +3,7 @@ import { logForDebugging } from '../debug.js'
 import { isENOENT } from '../errors.js'
 import { getFsImplementation } from '../fsOperations.js'
 import { containsPathTraversal } from '../path.js'
+import { loadFflate } from '../../compat/native/fflate-adapter.js'
 
 const LIMITS = {
   MAX_FILE_SIZE: 512 * 1024 * 1024, // 512MB per file
@@ -113,7 +114,11 @@ export function validateZipFile(
 export async function unzipFile(
   zipData: Buffer,
 ): Promise<Record<string, Uint8Array>> {
-  const { unzipSync } = await import('fflate')
+  const fflate = await loadFflate()
+  if (!fflate) {
+    throw new Error('fflate is not available. Install: npm install fflate')
+  }
+  const { unzipSync } = fflate
   const compressedSize = zipData.length
 
   const state: ZipValidationState = {

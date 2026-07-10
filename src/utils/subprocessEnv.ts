@@ -1,4 +1,81 @@
+import { execSync } from 'child_process'
 import { isEnvTruthy } from './envUtils.js'
+
+/**
+ * Detect terminal column width for subprocesses.
+ *
+ * process.stdout.columns is often undefined in Ink/React-CLI environments
+ * because stdout is piped through the TUI renderer. When COLUMNS env var is
+ * also unset, child processes (like HUD plugins) cannot determine terminal
+ * width and features like line-wrapping break.
+ *
+ * Detection priority:
+ *   1. process.stdout.columns (works when stdout is a TTY)
+ *   2. process.stderr.columns (fallback)
+ *   3. Platform-specific console query (Windows: PowerShell mode con)
+ *   4. 120 (sensible default)
+ *
+ * Result is cached after first call.
+ */
+let _cachedColumns: number | undefined
+
+export function detectTerminalColumns(): number {
+  if (_cachedColumns !== undefined) return _cachedColumns
+
+  // Already set in environment
+  const envCols = Number.parseInt(process.env.COLUMNS ?? '', 10)
+  if (Number.isFinite(envCols) && envCols > 0) {
+    _cachedColumns = envCols
+    return envCols
+  }
+
+  // Try stream properties
+  if (typeof process.stdout?.columns === 'number' && process.stdout.columns > 0) {
+    _cachedColumns = process.stdout.columns
+    return process.stdout.columns
+  }
+  if (typeof process.stderr?.columns === 'number' && process.stderr.columns > 0) {
+    _cachedColumns = process.stderr.columns
+    return process.stderr.columns
+  }
+
+  // Platform-specific detection
+  try {
+    if (process.platform === 'win32') {
+      // Windows: mode con reports console buffer dimensions
+      const output = execSync('mode con', {
+        encoding: 'utf-8',
+        timeout: 2000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
+      const match = output.match(/Columns:\s*(\d+)/i)
+      if (match) {
+        const cols = Number.parseInt(match[1], 10)
+        if (Number.isFinite(cols) && cols > 0) {
+          _cachedColumns = cols
+          return cols
+        }
+      }
+    } else {
+      // POSIX: use tput or stty
+      try {
+        const output = execSync('tput cols 2>/dev/null || stty size 2>/dev/null | awk \'{print $2}\'', {
+          encoding: 'utf-8',
+          timeout: 2000,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }).trim()
+        const cols = Number.parseInt(output, 10)
+        if (Number.isFinite(cols) && cols > 0) {
+          _cachedColumns = cols
+          return cols
+        }
+      } catch { /* tput/stty not available */ }
+    }
+  } catch { /* platform detection failed */ }
+
+  _cachedColumns = 120
+  return 120
+}
 
 /**
  * Env vars to strip from subprocess environments when running inside GitHub
@@ -80,6 +157,12 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
   // proxy is disabled or not registered (non-CCR), so this is a no-op outside
   // CCR containers.
   const proxyEnv = _getUpstreamProxyEnv?.() ?? {}
+
+  // Ensure COLUMNS is set for child processes (HUD plugins, hooks, etc.)
+  // so they can detect terminal width for line-wrapping and layout.
+  if (!process.env.COLUMNS) {
+    process.env.COLUMNS = String(detectTerminalColumns())
+  }
 
   if (!isEnvTruthy(process.env.CLAUDE_CODE_SUBPROCESS_ENV_SCRUB)) {
     return Object.keys(proxyEnv).length > 0

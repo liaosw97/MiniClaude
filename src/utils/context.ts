@@ -1,5 +1,6 @@
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
 import { CONTEXT_1M_BETA_HEADER } from '../constants/betas.js'
+import { detectModelProvider } from '../constants/prompts-optimized.js'
 import { getGlobalConfig } from './config.js'
 import { isEnvTruthy } from './envUtils.js'
 import { getCanonicalName } from './model/model.js'
@@ -52,14 +53,11 @@ export function getContextWindowForModel(
   model: string,
   betas?: string[],
 ): number {
-  // Allow override via environment variable (ant-only)
+  // Allow override via environment variable (all users)
   // This takes precedence over all other context window resolution, including 1M detection,
   // so users can cap the effective context window for local decisions (auto-compact, etc.)
   // while still using a 1M-capable endpoint.
-  if (
-    process.env.USER_TYPE === 'ant' &&
-    process.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS
-  ) {
+  if (process.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS) {
     const override = parseInt(process.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS, 10)
     if (!isNaN(override) && override > 0) {
       return override
@@ -160,6 +158,45 @@ export function getModelMaxOutputTokens(model: string): {
       upperLimit = antModel.upperMaxTokensLimit ?? MAX_OUTPUT_TOKENS_UPPER_LIMIT
       return { default: defaultTokens, upperLimit }
     }
+  }
+
+  // 第三方模型分支
+  const provider = detectModelProvider()
+  switch (provider) {
+    case 'mimo':
+      defaultTokens = 128_000
+      upperLimit = 128_000
+      // 环境变量覆盖
+      {
+        const envOverride = parseInt(process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '', 10)
+        if (!isNaN(envOverride) && envOverride > 0) {
+          defaultTokens = Math.min(envOverride, upperLimit)
+        }
+      }
+      return { default: defaultTokens, upperLimit }
+    case 'deepseek':
+      defaultTokens = 128_000
+      upperLimit = 384_000
+      // 环境变量覆盖
+      {
+        const envOverride = parseInt(process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '', 10)
+        if (!isNaN(envOverride) && envOverride > 0) {
+          defaultTokens = Math.min(envOverride, upperLimit)
+        }
+      }
+      return { default: defaultTokens, upperLimit }
+    case 'glm':
+      defaultTokens = 128_000
+      upperLimit = 128_000
+      // 环境变量覆盖
+      {
+        const envOverride = parseInt(process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '', 10)
+        if (!isNaN(envOverride) && envOverride > 0) {
+          defaultTokens = Math.min(envOverride, upperLimit)
+        }
+      }
+      return { default: defaultTokens, upperLimit }
+    // minimax 和 unknown 使用默认 Claude 分支
   }
 
   const m = getCanonicalName(model)
