@@ -51,13 +51,13 @@ function buildStatusLineCommandInput(permissionMode: PermissionMode, exceeds200k
   const sessionName = getCurrentSessionTitle(sessionId);
   const rawUtil = getRawUtilization();
   const rateLimits: StatusLineCommandInput['rate_limits'] = {
-    ...(rawUtil.five_hour && {
+    ...(rawUtil?.five_hour && {
       five_hour: {
         used_percentage: rawUtil.five_hour.utilization * 100,
         resets_at: rawUtil.five_hour.resets_at
       }
     }),
-    ...(rawUtil.seven_day && {
+    ...(rawUtil?.seven_day && {
       seven_day: {
         used_percentage: rawUtil.seven_day.utilization * 100,
         resets_at: rawUtil.seven_day.resets_at
@@ -98,9 +98,7 @@ function buildStatusLineCommandInput(permissionMode: PermissionMode, exceeds200k
       remaining_percentage: contextPercentages.remaining
     },
     exceeds_200k_tokens: exceeds200kTokens,
-    ...((rateLimits.five_hour || rateLimits.seven_day) && {
-      rate_limits: rateLimits
-    }),
+    rate_limits: rateLimits,
     ...(isVimModeEnabled() && {
       vim: {
         mode: vimMode ?? 'INSERT'
@@ -346,6 +344,7 @@ function StatusLineInner({
   const parts = [modelDisplayName];
   if (branchName) parts.push(branchName);
   parts.push(modeLabel);
+  if (process.env.TRACE_ENABLED === 'true') parts.push('TRACE');
   const hudText = parts.join(' \u00b7 ') + ` \u00b7 ctx: ${ctxUsed}% `;
 
   // Context bar: 10 blocks
@@ -359,9 +358,11 @@ function StatusLineInner({
   // a row from ScrollBox and shifts content. Reserve the row while loading
   // (same trick as PromptInputFooterLeftSide).
   return <Box paddingX={paddingX} gap={2}>
-      {statusLineText ? <Text dimColor wrap="truncate">
+      {statusLineText ? 
+        <Text dimColor wrap="truncate">
           <Ansi>{statusLineText}</Ansi>
-        </Text> : <Text dimColor>
+        </Text> : 
+        <Text dimColor>
           {hudText}
           <Text color={barColor}>{"█".repeat(filledBlocks)}</Text>
           <Text dimColor>{"░".repeat(emptyBlocks)}</Text>
