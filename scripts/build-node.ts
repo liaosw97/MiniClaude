@@ -79,7 +79,9 @@ const stubAntOnlyPlugin: esbuild.Plugin = {
       }
 
       // Non-@ant/* modules: let esbuild's native resolver handle them.
-      // If the module doesn't exist, esbuild will emit a proper build error.
+      // If the module doesn't exist, esbuild will emit a proper build error,
+      // implementing the "stubbing range tightening" spec requirement:
+      // only @ant/* modules are allowlisted for stubbing.
       return null;
     });
 
