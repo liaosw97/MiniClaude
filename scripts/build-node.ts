@@ -39,15 +39,30 @@ const bunBundlePlugin: esbuild.Plugin = {
   },
 };
 
-// Plugin to stub missing modules dynamically
-const stubMissingModulesPlugin: esbuild.Plugin = {
-  name: 'stub-missing-modules',
+// Plugin to handle .md text imports (Bun's text loader, not built-in to esbuild)
+const mdTextPlugin: esbuild.Plugin = {
+  name: 'md-text',
   setup(build) {
-    // Cache for missing modules (keyed by importer + path to avoid false hits)
-    const missingCache = new Map<string, boolean>();
+    build.onResolve({ filter: /\.md$/ }, (args) => {
+      return {
+        path: args.path,
+        namespace: 'md-text',
+      };
+    });
 
+    build.onLoad({ filter: /.*/, namespace: 'md-text' }, (args) => ({
+      contents: readFileSync(args.path, 'utf-8'),
+      loader: 'text',
+    }));
+  },
+};
+
+// Plugin to stub only @ant/* modules; all other modules use esbuild's native resolver
+const stubAntOnlyPlugin: esbuild.Plugin = {
+  name: 'stub-ant-only',
+  setup(build) {
     build.onResolve({ filter: /.*/ }, (args) => {
-      // Skip node_modules (except @ant/* which we stub), absolute paths, and bun: imports
+      // Skip node_modules, absolute paths, and bun: imports
       if (
         (args.path.startsWith('node_modules') || isAbsolute(args.path) || args.path.startsWith('bun:')) ||
         (!args.path.startsWith('./') && !args.path.startsWith('../') && !args.path.startsWith('src/') && !args.path.startsWith('@ant/'))
@@ -55,7 +70,7 @@ const stubMissingModulesPlugin: esbuild.Plugin = {
         return null;
       }
 
-      // Stub @ant/* packages (removed in MiniClaude)
+      // Stub @ant/* packages (removed in MiniClaude) — allowlisted only
       if (args.path.startsWith('@ant/')) {
         return {
           path: args.path,
@@ -63,44 +78,9 @@ const stubMissingModulesPlugin: esbuild.Plugin = {
         };
       }
 
-      // Skip if already known to be missing (use composite key importer + path)
-      const cacheKey = `${args.importer || 'entry'}::${args.path}`;
-      if (missingCache.has(cacheKey)) {
-        return {
-          path: args.path,
-          namespace: 'stub',
-        };
-      }
-
-      // Try to resolve the module
-      let resolvedPath = args.path;
-      const importerDir = args.importer ? dirname(args.importer) : srcDir;
-
-      // Handle relative imports
-      if (args.path.startsWith('./') || args.path.startsWith('../')) {
-        resolvedPath = resolve(importerDir, args.path);
-      } else {
-        resolvedPath = resolve(srcDir, args.path);
-      }
-
-      // Check common extensions
-      // Strip .js/.jsx to try .ts/.tsx (esbuild native behavior)
-      const extStripped = resolvedPath.replace(/\.(js|jsx)$/i, '');
-      const extensions = ['.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx', '/index.js', '/index.jsx', ''];
-
-      for (const ext of extensions) {
-        const fullPath = extStripped + ext;
-        if (existsSync(fullPath)) {
-          return null; // Module exists, let esbuild handle it
-        }
-      }
-
-      // Module doesn't exist, stub it
-      missingCache.set(cacheKey, true);
-      return {
-        path: args.path,
-        namespace: 'stub',
-      };
+      // Non-@ant/* modules: let esbuild's native resolver handle them.
+      // If the module doesn't exist, esbuild will emit a proper build error.
+      return null;
     });
 
     build.onLoad({ filter: /.*/, namespace: 'stub' }, (args) => ({
@@ -126,8 +106,38 @@ const result = await esbuild.build({
   minify: !dev,
   sourcemap: dev,
   metafile: enableMetafile,
-  plugins: [bunBundlePlugin, stubMissingModulesPlugin],
+  plugins: [bunBundlePlugin, mdTextPlugin, stubAntOnlyPlugin],
+  banner: {
+    js: `import { createRequire } from 'module';const require = createRequire(import.meta.url);`,
+  },
   external: [
+    'crypto',
+    'node:events',
+    'node:fs',
+    'node:path',
+    'node:crypto',
+    'node:http',
+    'node:net',
+    'node:child_process',
+    'node:os',
+    'node:stream',
+    'node:util',
+    'node:url',
+    'node:buffer',
+    'node:process',
+    'node:timers',
+    'node:querystring',
+    'node:assert',
+    'node:tty',
+    'node:readline',
+    'node:zlib',
+    'node:string_decoder',
+    'node:dns',
+    'node:http2',
+    'node:https',
+    'node:perf_hooks',
+    'node:v8',
+    'node:worker_threads',
     'audio-capture-napi',
     'image-processor-napi',
     'modifiers-napi',

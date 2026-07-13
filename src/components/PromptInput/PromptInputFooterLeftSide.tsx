@@ -41,10 +41,7 @@ import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { getPlatform } from '../../utils/platform.js';
 import { PrBadge } from '../PrBadge.js';
 
-// Dead code elimination: conditional import for proactive mode
-/* eslint-disable @typescript-eslint/no-require-imports */
-const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../../proactive/index.js') : null;
-/* eslint-enable @typescript-eslint/no-require-imports */
+const proactiveModule = null;
 const NO_OP_SUBSCRIBE = (_cb: () => void) => () => {};
 const NULL = () => null;
 const MAX_VOICE_HINT_SHOWS = 3;

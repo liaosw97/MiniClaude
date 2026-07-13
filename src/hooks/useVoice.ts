@@ -529,7 +529,7 @@ export function useVoice({
   // dlopen still blocks. The first voice keypress pays the dlopen cost instead.
   useEffect(() => {
     if (enabled && !voiceModule) {
-      void import('../services/voice.js').then(mod => {
+      void Promise.resolve(null).then(mod => {
         voiceModule = mod
       })
     }
@@ -610,7 +610,7 @@ export function useVoice({
       } else {
         // Voice module is loading (async import resolves from cache as a
         // microtask). Wait for it before starting the recording session.
-        void import('../services/voice.js').then(mod => {
+        void Promise.resolve(null).then(mod => {
           voiceModule = mod
           beginFocusRecording()
         })

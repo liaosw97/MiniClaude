@@ -94,10 +94,8 @@ import type { DiscoverySignal } from '../services/skillSearch/signals.js'
 /* eslint-disable @typescript-eslint/no-require-imports */
 const skillSearchModules = feature('EXPERIMENTAL_SKILL_SEARCH')
   ? {
-      featureCheck:
-        require('../services/skillSearch/featureCheck.js') as typeof import('../services/skillSearch/featureCheck.js'),
-      prefetch:
-        require('../services/skillSearch/prefetch.js') as typeof import('../services/skillSearch/prefetch.js'),
+      featureCheck: null as unknown as typeof import('../services/skillSearch/featureCheck.js'),
+      prefetch: null as unknown as typeof import('../services/skillSearch/prefetch.js'),
     }
   : null
 const autoModeStateModule = feature('TRANSCRIPT_CLASSIFIER')
@@ -204,7 +202,7 @@ const BRIEF_TOOL_NAME: string | null =
       ).BRIEF_TOOL_NAME
     : null
 const sessionTranscriptModule = feature('KAIROS')
-  ? (require('../services/sessionTranscript/sessionTranscript.js') as typeof import('../services/sessionTranscript/sessionTranscript.js'))
+  ? (null as unknown as typeof import('../services/sessionTranscript/sessionTranscript.js'))
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { hasUltrathinkKeyword, isUltrathinkEnabled } from './thinking.js'

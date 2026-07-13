@@ -194,7 +194,7 @@ export function useReplBridge(messages: Message[], setMessages: (action: React.S
                 /* eslint-disable @typescript-eslint/no-require-imports */
                 const {
                   sanitizeInboundWebhookContent
-                } = require('../bridge/webhookSanitizer.js') as typeof import('../bridge/webhookSanitizer.js');
+                } = null as unknown as typeof import('../bridge/webhookSanitizer.js') as typeof import('../bridge/webhookSanitizer.js');
                 /* eslint-enable @typescript-eslint/no-require-imports */
                 sanitized = sanitizeInboundWebhookContent(fields.content);
               }

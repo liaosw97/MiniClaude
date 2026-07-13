@@ -191,11 +191,11 @@ import { restoreRemoteAgentTasks } from '../tasks/RemoteAgentTask/RemoteAgentTas
 import { useInboxPoller } from '../hooks/useInboxPoller.js';
 // Dead code elimination: conditional import for loop mode
 /* eslint-disable @typescript-eslint/no-require-imports */
-const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../proactive/index.js') : null;
+const proactiveModule = null;
 const PROACTIVE_NO_OP_SUBSCRIBE = (_cb: () => void) => () => {};
 const PROACTIVE_FALSE = () => false;
 const SUGGEST_BG_PR_NOOP = (_p: string, _n: string): boolean => false;
-const useProactive = feature('PROACTIVE') || feature('KAIROS') ? require('../proactive/useProactive.js').useProactive : null;
+const useProactive = null;
 const useScheduledTasks = feature('AGENT_TRIGGERS') ? require('../hooks/useScheduledTasks.js').useScheduledTasks : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { isAgentSwarmsEnabled } from '../utils/agentSwarmsEnabled.js';
@@ -265,7 +265,7 @@ import { useFastModeNotification } from 'src/hooks/notifs/useFastModeNotificatio
 import { AutoRunIssueNotification, shouldAutoRunIssue, getAutoRunIssueReasonText, getAutoRunCommand, type AutoRunIssueReason } from '../utils/autoRunIssue.js';
 import type { HookProgress } from '../types/hooks.js';
 /* eslint-disable @typescript-eslint/no-require-imports */
-const WebBrowserPanelModule = feature('WEB_BROWSER_TOOL') ? require('../tools/WebBrowserTool/WebBrowserPanel.js') as typeof import('../tools/WebBrowserTool/WebBrowserPanel.js') : null;
+const WebBrowserPanelModule = feature('WEB_BROWSER_TOOL') ? null as unknown as typeof import('../tools/WebBrowserTool/WebBrowserPanel.js') : null;
 const UltraplanLaunchDialog: typeof import('../components/UltraplanLaunchDialog.js').UltraplanLaunchDialog = feature('ULTRAPLAN') ? require('../components/UltraplanLaunchDialog.js').UltraplanLaunchDialog : () => null;
 const UltraplanChoiceDialog: typeof import('../components/UltraplanChoiceDialog.js').UltraplanChoiceDialog = feature('ULTRAPLAN') ? require('../components/UltraplanChoiceDialog.js').UltraplanChoiceDialog : () => null;
 const launchUltraplan: typeof import('../commands/ultraplan.js').launchUltraplan = feature('ULTRAPLAN') ? require('../commands/ultraplan.js').launchUltraplan : () => Promise.resolve('');

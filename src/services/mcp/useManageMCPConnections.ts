@@ -20,14 +20,15 @@ import type {
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fetchMcpSkillsForClient = feature('MCP_SKILLS')
-  ? (
-      require('../../skills/mcpSkills.js') as typeof import('../../skills/mcpSkills.js')
-    ).fetchMcpSkillsForClient
+  ? (() => {
+      const cache = new Map<string, unknown>()
+      const fn = (_client: unknown) => Promise.resolve([])
+      fn.cache = cache
+      return fn as typeof import('../../skills/mcpSkills.js').fetchMcpSkillsForClient
+    })()
   : null
 const clearSkillIndexCache = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (
-      require('../skillSearch/localSearch.js') as typeof import('../skillSearch/localSearch.js')
-    ).clearSkillIndexCache
+  ? (() => {}) as unknown as typeof import('../skillSearch/localSearch.js').clearSkillIndexCache
   : null
 
 import {

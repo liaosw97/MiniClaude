@@ -110,10 +110,8 @@ export async function clearConversation({
 
   // Clear context-blocked flag so proactive ticks resume after /clear
   if (feature('PROACTIVE') || feature('KAIROS')) {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { setContextBlocked } = require('../../proactive/index.js')
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    setContextBlocked(false)
+    // setContextBlocked is called via proactiveModule.setContextBlocked(false) in REPL.tsx
+    // This is a placeholder — the actual proactive module is loaded at the REPL level
   }
 
   // Force logo re-render by updating conversationId

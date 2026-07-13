@@ -603,23 +603,10 @@ async function performPostCreationSetup(
   if (feature('COMMIT_ATTRIBUTION')) {
     const worktreeHooksDir =
       hooksPath === huskyPath ? join(worktreePath, '.husky') : undefined
-    void import('./postCommitAttribution.js')
-      .then(m =>
-        m
-          .installPrepareCommitMsgHook(worktreePath, worktreeHooksDir)
-          .catch(error => {
-            logForDebugging(
-              `Failed to install attribution hook in worktree: ${error}`,
-            )
-          }),
-      )
-      .catch(error => {
-        // Dynamic import() itself rejected (module load failure). The inner
-        // .catch above only handles installPrepareCommitMsgHook rejection —
-        // without this outer handler an import failure would surface as an
-        // unhandled promise rejection.
-        logForDebugging(`Failed to load postCommitAttribution module: ${error}`)
-      })
+    // postCommitAttribution.js removed — stub kept for feature gate structure
+    logForDebugging(
+      `COMMIT_ATTRIBUTION feature enabled but module not available (stub)`,
+    )
   }
 }
 

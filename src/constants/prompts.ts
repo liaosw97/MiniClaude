@@ -64,36 +64,27 @@ import { isMcpInstructionsDeltaEnabled } from '../utils/mcpInstructionsDelta.js'
 // Dead code elimination: conditional imports for feature-gated modules
 /* eslint-disable @typescript-eslint/no-require-imports */
 const getCachedMCConfigForFRC = feature('CACHED_MICROCOMPACT')
-  ? (
-      require('../services/compact/cachedMCConfig.js') as typeof import('../services/compact/cachedMCConfig.js')
-    ).getCachedMCConfig
+  ? null as unknown as typeof import('../services/compact/cachedMCConfig.js').getCachedMCConfig
   : null
 
-const proactiveModule =
-  feature('PROACTIVE') || feature('KAIROS')
-    ? require('../proactive/index.js')
-    : null
+const proactiveModule = null
 const BRIEF_PROACTIVE_SECTION: string | null =
   feature('KAIROS') || feature('KAIROS_BRIEF')
-    ? (
-        require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')
-      ).BRIEF_PROACTIVE_SECTION
+    ? null as unknown as string
     : null
 const briefToolModule =
   feature('KAIROS') || feature('KAIROS_BRIEF')
-    ? (require('../tools/BriefTool/BriefTool.js') as typeof import('../tools/BriefTool/BriefTool.js'))
+    ? null as unknown as typeof import('../tools/BriefTool/BriefTool.js')
     : null
 const DISCOVER_SKILLS_TOOL_NAME: string | null = feature(
   'EXPERIMENTAL_SKILL_SEARCH',
 )
-  ? (
-      require('../tools/DiscoverSkillsTool/prompt.js') as typeof import('../tools/DiscoverSkillsTool/prompt.js')
-    ).DISCOVER_SKILLS_TOOL_NAME
+  ? null as unknown as string
   : null
 // Capture the module (not .isSkillSearchEnabled directly) so spyOn() in tests
 // patches what we actually call — a captured function ref would point past the spy.
 const skillSearchFeatureCheck = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (require('../services/skillSearch/featureCheck.js') as typeof import('../services/skillSearch/featureCheck.js'))
+  ? null as unknown as typeof import('../services/skillSearch/featureCheck.js')
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import type { OutputStyleConfig } from './outputStyles.js'

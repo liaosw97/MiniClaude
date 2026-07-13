@@ -114,11 +114,7 @@ import { normalizeNameForMCP } from './normalization.js'
 import { getLoggingSafeMcpBaseUrl } from './utils.js'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const fetchMcpSkillsForClient = feature('MCP_SKILLS')
-  ? (
-      require('../../skills/mcpSkills.js') as typeof import('../../skills/mcpSkills.js')
-    ).fetchMcpSkillsForClient
-  : null
+const fetchMcpSkillsForClient = null
 
 import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 import type { AssistantMessage } from 'src/types/message.js'

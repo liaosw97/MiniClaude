@@ -196,4 +196,65 @@ describe('openBrowser', () => {
     const { openBrowser } = await import('../../../src/services/trace/traceServer')
     expect(typeof openBrowser).toBe('function')
   })
+
+  it('should not throw when opening URL in Node.js (uses child_process.spawn)', async () => {
+    // 移除 Bun global，模拟 Node.js 环境
+    const origBun = (globalThis as any).Bun
+    delete (globalThis as any).Bun
+
+    try {
+      const { openBrowser } = await import('../../../src/services/trace/traceServer')
+
+      // openBrowser 在 Node.js 下不应抛出异常
+      // 注意：spawn 返回 child 的 unref() 是 undefined，
+      // 所以在 child.on('error') 调用前需要保护
+      // 直接调用 openBrowser 应该不抛异常
+      const result = openBrowser('http://127.0.0.1:1')
+      expect(result).toBeUndefined()
+    } finally {
+      // 无论是否异常，确保恢复 Bun global
+      (globalThis as any).Bun = origBun
+    }
+  })
+})
+
+describe('startTraceServer in Node.js mode', () => {
+  it('should start server and return port/stop when Bun is undefined', async () => {
+    const origBun = (globalThis as any).Bun
+    delete (globalThis as any).Bun
+
+    try {
+      const { startTraceServer } = await import('../../../src/services/trace/traceServer')
+
+      const server = await startTraceServer({ port: 3920 })
+      expect(server.port).toBe(3920)
+      expect(typeof server.stop).toBe('function')
+
+      server.stop()
+    } finally {
+      (globalThis as any).Bun = origBun
+    }
+  })
+
+  it('should try next port when port is in use in Node.js mode', async () => {
+    const origBun = (globalThis as any).Bun
+    delete (globalThis as any).Bun
+
+    try {
+      const { startTraceServer } = await import('../../../src/services/trace/traceServer')
+
+      // 启动第一个 server 占用端口
+      const server1 = await startTraceServer({ port: 3940 })
+      expect(server1.port).toBe(3940)
+
+      // 尝试启动第二个 server，应自动尝试下一端口
+      const server2 = await startTraceServer({ port: 3940 })
+      expect(server2.port).toBe(3941)
+
+      server1.stop()
+      server2.stop()
+    } finally {
+      (globalThis as any).Bun = origBun
+    }
+  })
 })

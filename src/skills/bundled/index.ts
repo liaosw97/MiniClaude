@@ -35,16 +35,10 @@ export function initBundledSkills(): void {
   registerHtmlOutputSkill()
   registerStuckSkill()
   if (feature('KAIROS') || feature('KAIROS_DREAM')) {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { registerDreamSkill } = require('./dream.js')
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    registerDreamSkill()
+    // dream.js removed — stub kept for feature gate structure
   }
   if (feature('REVIEW_ARTIFACT')) {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { registerHunterSkill } = require('./hunter.js')
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    registerHunterSkill()
+    // hunter.js removed — stub kept for feature gate structure
   }
   if (feature('AGENT_TRIGGERS')) {
     /* eslint-disable @typescript-eslint/no-require-imports */
@@ -63,19 +57,13 @@ export function initBundledSkills(): void {
     /* eslint-enable @typescript-eslint/no-require-imports */
     registerScheduleRemoteAgentsSkill()
   }
-  if (feature('BUILDING_CLAUDE_APPS')) {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { registerClaudeApiSkill } = require('./claudeApi.js')
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    registerClaudeApiSkill()
+  if (false) {
+    // BUILDING_CLAUDE_APPS feature — claude-api skill removed (content files not available)
   }
   if (shouldAutoEnableClaudeInChrome()) {
     registerClaudeInChromeSkill()
   }
   if (feature('RUN_SKILL_GENERATOR')) {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { registerRunSkillGeneratorSkill } = require('./runSkillGenerator.js')
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    registerRunSkillGeneratorSkill()
+    // runSkillGenerator.js removed — stub kept for feature gate structure
   }
 }

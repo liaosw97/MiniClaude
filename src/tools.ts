@@ -15,40 +15,34 @@ import { BriefTool } from './tools/BriefTool/BriefTool.js'
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 const REPLTool =
   process.env.USER_TYPE === 'ant'
-    ? require('./tools/REPLTool/REPLTool.js').REPLTool
+    ? null as unknown as typeof import('./tools/REPLTool/REPLTool.js').REPLTool
     : null
 const SuggestBackgroundPRTool =
   process.env.USER_TYPE === 'ant'
-    ? require('./tools/SuggestBackgroundPRTool/SuggestBackgroundPRTool.js')
-        .SuggestBackgroundPRTool
+    ? null as unknown as typeof import('./tools/SuggestBackgroundPRTool/SuggestBackgroundPRTool.js').SuggestBackgroundPRTool
     : null
 const SleepTool =
   feature('PROACTIVE') || feature('KAIROS')
-    ? require('./tools/SleepTool/SleepTool.js').SleepTool
+    ? null as unknown as typeof import('./tools/SleepTool/SleepTool.js').SleepTool
     : null
 const cronTools = feature('AGENT_TRIGGERS')
-  ? [
-      require('./tools/ScheduleCronTool/CronCreateTool.js').CronCreateTool,
-      require('./tools/ScheduleCronTool/CronDeleteTool.js').CronDeleteTool,
-      require('./tools/ScheduleCronTool/CronListTool.js').CronListTool,
-    ]
+  ? []
   : []
 const RemoteTriggerTool = feature('AGENT_TRIGGERS_REMOTE')
-  ? require('./tools/RemoteTriggerTool/RemoteTriggerTool.js').RemoteTriggerTool
+  ? null as unknown as typeof import('./tools/RemoteTriggerTool/RemoteTriggerTool.js').RemoteTriggerTool
   : null
 const MonitorTool = feature('MONITOR_TOOL')
-  ? require('./tools/MonitorTool/MonitorTool.js').MonitorTool
+  ? null as unknown as typeof import('./tools/MonitorTool/MonitorTool.js').MonitorTool
   : null
 const SendUserFileTool = feature('KAIROS')
-  ? require('./tools/SendUserFileTool/SendUserFileTool.js').SendUserFileTool
+  ? null as unknown as typeof import('./tools/SendUserFileTool/SendUserFileTool.js').SendUserFileTool
   : null
 const PushNotificationTool =
   feature('KAIROS') || feature('KAIROS_PUSH_NOTIFICATION')
-    ? require('./tools/PushNotificationTool/PushNotificationTool.js')
-        .PushNotificationTool
+    ? null as unknown as typeof import('./tools/PushNotificationTool/PushNotificationTool.js').PushNotificationTool
     : null
 const SubscribePRTool = feature('KAIROS_GITHUB_WEBHOOKS')
-  ? require('./tools/SubscribePRTool/SubscribePRTool.js').SubscribePRTool
+  ? null as unknown as typeof import('./tools/SubscribePRTool/SubscribePRTool.js').SubscribePRTool
   : null
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 import { TaskOutputTool } from './tools/TaskOutputTool/TaskOutputTool.js'
@@ -77,8 +71,7 @@ import { isTodoV2Enabled } from './utils/tasks.js'
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 const VerifyPlanExecutionTool =
   process.env.CLAUDE_CODE_VERIFY_PLAN === 'true'
-    ? require('./tools/VerifyPlanExecutionTool/VerifyPlanExecutionTool.js')
-        .VerifyPlanExecutionTool
+    ? null as unknown as typeof import('./tools/VerifyPlanExecutionTool/VerifyPlanExecutionTool.js').VerifyPlanExecutionTool
     : null
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 import { SYNTHETIC_OUTPUT_TOOL_NAME } from './tools/SyntheticOutputTool/SyntheticOutputTool.js'
@@ -91,26 +84,22 @@ import { feature } from 'bun:bundle'
 // Dead code elimination: conditional import for OVERFLOW_TEST_TOOL
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 const OverflowTestTool = feature('OVERFLOW_TEST_TOOL')
-  ? require('./tools/OverflowTestTool/OverflowTestTool.js').OverflowTestTool
+  ? null as unknown as typeof import('./tools/OverflowTestTool/OverflowTestTool.js').OverflowTestTool
   : null
 const CtxInspectTool = feature('CONTEXT_COLLAPSE')
-  ? require('./tools/CtxInspectTool/CtxInspectTool.js').CtxInspectTool
+  ? null as unknown as typeof import('./tools/CtxInspectTool/CtxInspectTool.js').CtxInspectTool
   : null
 const TerminalCaptureTool = feature('TERMINAL_PANEL')
-  ? require('./tools/TerminalCaptureTool/TerminalCaptureTool.js')
-      .TerminalCaptureTool
+  ? null as unknown as typeof import('./tools/TerminalCaptureTool/TerminalCaptureTool.js').TerminalCaptureTool
   : null
 const WebBrowserTool = feature('WEB_BROWSER_TOOL')
-  ? require('./tools/WebBrowserTool/WebBrowserTool.js').WebBrowserTool
+  ? null as unknown as typeof import('./tools/WebBrowserTool/WebBrowserTool.js').WebBrowserTool
   : null
 const SnipTool = feature('HISTORY_SNIP')
-  ? require('./tools/SnipTool/SnipTool.js').SnipTool
+  ? null as unknown as typeof import('./tools/SnipTool/SnipTool.js').SnipTool
   : null
 const WorkflowTool = feature('WORKFLOW_SCRIPTS')
-  ? (() => {
-      require('./tools/WorkflowTool/bundled/index.js').initBundledWorkflows()
-      return require('./tools/WorkflowTool/WorkflowTool.js').WorkflowTool
-    })()
+  ? (null as unknown as typeof import('./tools/WorkflowTool/WorkflowTool.js').WorkflowTool)
   : null
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 import type { ToolPermissionContext } from './Tool.js'

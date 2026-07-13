@@ -4,7 +4,7 @@ import uniqBy from 'lodash-es/uniqBy.js'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const sessionTranscriptModule = feature('KAIROS')
-  ? (require('../sessionTranscript/sessionTranscript.js') as typeof import('../sessionTranscript/sessionTranscript.js'))
+  ? (null as unknown as typeof import('../sessionTranscript/sessionTranscript.js'))
   : null
 
 import { APIUserAbortError } from '@anthropic-ai/sdk'

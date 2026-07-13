@@ -357,10 +357,7 @@ import { isExtractModeActive } from '../memdir/paths.js'
 const coordinatorModeModule = feature('COORDINATOR_MODE')
   ? (require('../coordinator/coordinatorMode.js') as typeof import('../coordinator/coordinatorMode.js'))
   : null
-const proactiveModule =
-  feature('PROACTIVE') || feature('KAIROS')
-    ? (require('../proactive/index.js') as typeof import('../proactive/index.js'))
-    : null
+const proactiveModule = null
 const cronSchedulerModule = feature('AGENT_TRIGGERS')
   ? (require('../utils/cronScheduler.js') as typeof import('../utils/cronScheduler.js'))
   : null
@@ -2665,9 +2662,8 @@ function runHeadlessStreaming(
   // Set up UDS inbox callback so the query loop is kicked off
   // when a message arrives via the UDS socket in headless mode.
   if (feature('UDS_INBOX')) {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { setOnEnqueue } = require('../utils/udsMessaging.js')
-    /* eslint-enable @typescript-eslint/no-require-imports */
+    // udsMessaging.js removed — stub kept for feature gate structure
+    const setOnEnqueue = (_cb: () => void) => {}
     setOnEnqueue(() => {
       if (!inputClosed) {
         void run()

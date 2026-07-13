@@ -33,41 +33,9 @@ import theme from './commands/theme/index.js'
 import vim from './commands/vim/index.js'
 import { feature } from 'bun:bundle'
 // Dead code elimination: conditional imports
-/* eslint-disable @typescript-eslint/no-require-imports */
-const bridge = feature('BRIDGE_MODE')
-  ? require('./commands/bridge/index.js').default
-  : null
-const remoteControlServerCommand =
-  feature('DAEMON') && feature('BRIDGE_MODE')
-    ? require('./commands/remoteControlServer/index.js').default
-    : null
-const forceSnip = feature('HISTORY_SNIP')
-  ? require('./commands/force-snip.js').default
-  : null
-const workflowsCmd = feature('WORKFLOW_SCRIPTS')
-  ? (
-      require('./commands/workflows/index.js') as typeof import('./commands/workflows/index.js')
-    ).default
-  : null
-
-const clearSkillIndexCache = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (
-      require('./services/skillSearch/localSearch.js') as typeof import('./services/skillSearch/localSearch.js')
-    ).clearSkillIndexCache
-  : null
-const subscribePr = feature('KAIROS_GITHUB_WEBHOOKS')
-  ? require('./commands/subscribe-pr.js').default
-  : null
 const ultraplan = feature('ULTRAPLAN')
   ? require('./commands/ultraplan.js').default
   : null
-const torch = feature('TORCH') ? require('./commands/torch.js').default : null
-const forkCmd = feature('FORK_SUBAGENT')
-  ? (
-      require('./commands/fork/index.js') as typeof import('./commands/fork/index.js')
-    ).default
-  : null
-/* eslint-enable @typescript-eslint/no-require-imports */
 import permissions from './commands/permissions/index.js'
 import plan from './commands/plan/index.js'
 import fast from './commands/fast/index.js'
@@ -172,17 +140,12 @@ const COMMANDS = memoize((): Command[] => [
   securityReview,
   terminalSetup,
   vim,
-  ...(forkCmd ? [forkCmd] : []),
-  ...(bridge ? [bridge] : []),
-  ...(remoteControlServerCommand ? [remoteControlServerCommand] : []),
   permissions,
   plan,
   hooks,
   exportCommand,
   sandboxToggle,
   tasks,
-  ...(workflowsCmd ? [workflowsCmd] : []),
-  ...(torch ? [torch] : []),
   ...(ultraplan ? [ultraplan] : []),
 ])
 
@@ -238,14 +201,6 @@ async function getSkills(cwd: string): Promise<{
   }
 }
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-const getWorkflowCommands = feature('WORKFLOW_SCRIPTS')
-  ? (
-      require('./tools/WorkflowTool/createWorkflowCommand.js') as typeof import('./tools/WorkflowTool/createWorkflowCommand.js')
-    ).getWorkflowCommands
-  : null
-/* eslint-enable @typescript-eslint/no-require-imports */
-
 /**
  * Filters commands by their declared `availability` (auth/provider requirement).
  * Commands without `availability` are treated as universal.
@@ -289,18 +244,15 @@ const loadAllCommands = memoize(async (cwd: string): Promise<Command[]> => {
   const [
     { skillDirCommands, pluginSkills, bundledSkills, builtinPluginSkills },
     pluginCommands,
-    workflowCommands,
   ] = await Promise.all([
     getSkills(cwd),
     getPluginCommands(),
-    getWorkflowCommands ? getWorkflowCommands(cwd) : Promise.resolve([]),
   ])
 
   return [
     ...bundledSkills,
     ...builtinPluginSkills,
     ...skillDirCommands,
-    ...workflowCommands,
     ...pluginCommands,
     ...pluginSkills,
     ...COMMANDS(),
@@ -362,12 +314,12 @@ export async function getCommands(cwd: string): Promise<Command[]> {
 export function clearCommandMemoizationCaches(): void {
   loadAllCommands.cache?.clear?.()
   getSkillToolCommands.cache?.clear?.()
-  getSlashCommandToolSkills.cache?.clear?.()
+  // getSlashCommandToolSkills.cache?.clear?.()
   // getSkillIndex in skillSearch/localSearch.ts is a separate memoization layer
   // built ON TOP of getSkillToolCommands/getCommands. Clearing only the inner
   // caches is a no-op for the outer — lodash memoize returns the cached result
   // without ever reaching the cleared inners. Must clear it explicitly.
-  clearSkillIndexCache?.()
+  // clearSkillIndexCache?.()
 }
 
 export function clearCommandsCache(): void {

@@ -8,6 +8,7 @@
  */
 
 import { build, type BuildOutput } from 'bun'
+import { build as esbuildBuild } from 'esbuild'
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -60,6 +61,27 @@ ${options.js}
  * 构建 JS bundle
  */
 async function buildJs(entrypoint: string): Promise<string> {
+  if (typeof Bun === 'undefined') {
+    // Node.js 路径：使用 esbuild
+    const result = await esbuildBuild({
+      entryPoints: [join(SRC_DIR, entrypoint)],
+      bundle: true,
+      platform: 'browser',
+      format: 'esm',
+      minify: false,
+      write: false,
+    })
+    if (result.errors.length > 0) {
+      throw new Error(`Build failed: ${result.errors.map(e => e.text).join('\n')}`)
+    }
+    const output = result.outputFiles[0]
+    if (!output) {
+      throw new Error('No output generated')
+    }
+    return output.text
+  }
+
+  // Bun 路径（原始代码不变）
   const result = await build({
     entrypoints: [join(SRC_DIR, entrypoint)],
     target: 'browser',

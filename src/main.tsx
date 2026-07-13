@@ -73,12 +73,12 @@ const getTeammateModeSnapshot = () => require('./utils/swarm/backends/teammateMo
 /* eslint-enable @typescript-eslint/no-require-imports */
 // Dead code elimination: conditional import for COORDINATOR_MODE
 /* eslint-disable @typescript-eslint/no-require-imports */
-const coordinatorModeModule = feature('COORDINATOR_MODE') ? require('./coordinator/coordinatorMode.js') as typeof import('./coordinator/coordinatorMode.js') : null;
+const coordinatorModeModule = feature('COORDINATOR_MODE') ? null as unknown as typeof import('./coordinator/coordinatorMode.js') : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 // Dead code elimination: conditional import for KAIROS (assistant mode)
 /* eslint-disable @typescript-eslint/no-require-imports */
-const assistantModule = feature('KAIROS') ? require('./assistant/index.js') as typeof import('./assistant/index.js') : null;
-const kairosGate = feature('KAIROS') ? require('./assistant/gate.js') as typeof import('./assistant/gate.js') : null;
+const assistantModule = feature('KAIROS') ? null as unknown as typeof import('./assistant/index.js') : null;
+const kairosGate = feature('KAIROS') ? null as unknown as typeof import('./assistant/gate.js') : null;
 import { relative, resolve } from 'path';
 import { isAnalyticsDisabled } from 'src/services/analytics/config.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from 'src/services/analytics/growthbook.js';
@@ -608,10 +608,8 @@ export async function main() {
     const ccIdx = rawCliArgs.findIndex(a => a.startsWith('cc://') || a.startsWith('cc+unix://'));
     if (ccIdx !== -1 && _pendingConnect) {
       const ccUrl = rawCliArgs[ccIdx]!;
-      const {
-        parseConnectUrl
-      } = await import('./server/parseConnectUrl.js');
-      const parsed = parseConnectUrl(ccUrl);
+      // Server module removed — connect via URL parsing disabled
+      console.warn('Server connect URL parsing not available in MiniClaude');
       _pendingConnect.dangerouslySkipPermissions = rawCliArgs.includes('--dangerously-skip-permissions');
       if (rawCliArgs.includes('-p') || rawCliArgs.includes('--print')) {
         // Headless: rewrite to internal `open` subcommand
@@ -3150,55 +3148,12 @@ async function run(): Promise<CommanderCommand> {
         thinkingConfig
       }, renderAndRun);
       return;
-    } else if (feature('SSH_REMOTE') && _pendingSSH?.host) {
-      // `claude ssh <host> [dir]` — probe remote, deploy binary if needed,
-      // spawn ssh with unix-socket -R forward to a local auth proxy, hand
-      // the REPL an SSHSession. Tools run remotely, UI renders locally.
-      // `--local` skips probe/deploy/ssh and spawns the current binary
-      // directly with the same env — e2e test of the proxy/auth plumbing.
-      const {
-        createSSHSession,
-        createLocalSSHSession,
-        SSHSessionError
-      } = await import('./ssh/createSSHSession.js');
-      let sshSession;
-      try {
-        if (_pendingSSH.local) {
-          process.stderr.write('Starting local ssh-proxy test session...\n');
-          sshSession = createLocalSSHSession({
-            cwd: _pendingSSH.cwd,
-            permissionMode: _pendingSSH.permissionMode,
-            dangerouslySkipPermissions: _pendingSSH.dangerouslySkipPermissions
-          });
-        } else {
-          process.stderr.write(`Connecting to ${_pendingSSH.host}…\n`);
-          // In-place progress: \r + EL0 (erase to end of line). Final \n on
-          // success so the next message lands on a fresh line. No-op when
-          // stderr isn't a TTY (piped/redirected) — \r would just emit noise.
-          const isTTY = process.stderr.isTTY;
-          let hadProgress = false;
-          sshSession = await createSSHSession({
-            host: _pendingSSH.host,
-            cwd: _pendingSSH.cwd,
-            localVersion: MACRO.VERSION,
-            permissionMode: _pendingSSH.permissionMode,
-            dangerouslySkipPermissions: _pendingSSH.dangerouslySkipPermissions,
-            extraCliArgs: _pendingSSH.extraCliArgs
-          }, isTTY ? {
-            onProgress: msg => {
-              hadProgress = true;
-              process.stderr.write(`\r  ${msg}\x1b[K`);
-            }
-          } : {});
-          if (hadProgress) process.stderr.write('\n');
-        }
-        setOriginalCwd(sshSession.remoteCwd);
-        setCwdState(sshSession.remoteCwd);
-        setDirectConnectServerUrl(_pendingSSH.local ? 'local' : _pendingSSH.host);
-      } catch (err) {
-        return await exitWithError(root, err instanceof SSHSessionError ? err.message : String(err), () => gracefulShutdown(1));
-      }
-      const sshInfoMessage = createSystemMessage(_pendingSSH.local ? `Local ssh-proxy test session\ncwd: ${sshSession.remoteCwd}\nAuth: unix socket → local proxy` : `SSH session to ${_pendingSSH.host}\nRemote cwd: ${sshSession.remoteCwd}\nAuth: unix socket -R → local proxy`, 'info');
+    } else if (false) {
+      // SSH_REMOTE feature — modules removed in MiniClaude
+      setOriginalCwd(_pendingSSH.cwd);
+      setCwdState(_pendingSSH.cwd);
+      setDirectConnectServerUrl(_pendingSSH.local ? 'local' : _pendingSSH.host);
+      const sshInfoMessage = createSystemMessage(_pendingSSH.local ? `Local ssh-proxy test session\ncwd: ${_pendingSSH.cwd}\nAuth: unix socket → local proxy` : `SSH session to ${_pendingSSH.host}\nRemote cwd: ${_pendingSSH.cwd}\nAuth: unix socket -R → local proxy`, 'info');
       await launchRepl(root, {
         getFpsMetrics,
         stats,
@@ -3216,14 +3171,8 @@ async function run(): Promise<CommanderCommand> {
         thinkingConfig
       }, renderAndRun);
       return;
-    } else if (feature('KAIROS') && _pendingAssistantChat && (_pendingAssistantChat.sessionId || _pendingAssistantChat.discover)) {
-      // `claude assistant [sessionId]` — REPL as a pure viewer client
-      // of a remote assistant session. The agentic loop runs remotely; this
-      // process streams live events and POSTs messages. History is lazy-
-      // loaded by useAssistantHistory on scroll-up (no blocking fetch here).
-      const {
-        discoverAssistantSessions
-      } = await import('./assistant/sessionDiscovery.js');
+    } else if (false) {
+      // KAIROS assistant feature — modules removed in MiniClaude
       let targetSessionId = _pendingAssistantChat.sessionId;
 
       // Discovery flow — list bridge environments, filter sessions
@@ -3918,82 +3867,10 @@ async function run(): Promise<CommanderCommand> {
   });
 
   // claude server
-  if (feature('DIRECT_CONNECT')) {
-    program.command('server').description('Start a Claude Code session server').option('--port <number>', 'HTTP port', '0').option('--host <string>', 'Bind address', '0.0.0.0').option('--auth-token <token>', 'Bearer token for auth').option('--unix <path>', 'Listen on a unix domain socket').option('--workspace <dir>', 'Default working directory for sessions that do not specify cwd').option('--idle-timeout <ms>', 'Idle timeout for detached sessions in ms (0 = never expire)', '600000').option('--max-sessions <n>', 'Maximum concurrent sessions (0 = unlimited)', '32').action(async (opts: {
-      port: string;
-      host: string;
-      authToken?: string;
-      unix?: string;
-      workspace?: string;
-      idleTimeout: string;
-      maxSessions: string;
-    }) => {
-      const {
-        randomBytes
-      } = await import('crypto');
-      const {
-        startServer
-      } = await import('./server/server.js');
-      const {
-        SessionManager
-      } = await import('./server/sessionManager.js');
-      const {
-        DangerousBackend
-      } = await import('./server/backends/dangerousBackend.js');
-      const {
-        printBanner
-      } = await import('./server/serverBanner.js');
-      const {
-        createServerLogger
-      } = await import('./server/serverLog.js');
-      const {
-        writeServerLock,
-        removeServerLock,
-        probeRunningServer
-      } = await import('./server/lockfile.js');
-      const existing = await probeRunningServer();
-      if (existing) {
-        process.stderr.write(`A claude server is already running (pid ${existing.pid}) at ${existing.httpUrl}\n`);
-        process.exit(1);
-      }
-      const authToken = opts.authToken ?? `sk-ant-cc-${randomBytes(16).toString('base64url')}`;
-      const config = {
-        port: parseInt(opts.port, 10),
-        host: opts.host,
-        authToken,
-        unix: opts.unix,
-        workspace: opts.workspace,
-        idleTimeoutMs: parseInt(opts.idleTimeout, 10),
-        maxSessions: parseInt(opts.maxSessions, 10)
-      };
-      const backend = new DangerousBackend();
-      const sessionManager = new SessionManager(backend, {
-        idleTimeoutMs: config.idleTimeoutMs,
-        maxSessions: config.maxSessions
-      });
-      const logger = createServerLogger();
-      const server = startServer(config, sessionManager, logger);
-      const actualPort = server.port ?? config.port;
-      printBanner(config, authToken, actualPort);
-      await writeServerLock({
-        pid: process.pid,
-        port: actualPort,
-        host: config.host,
-        httpUrl: config.unix ? `unix:${config.unix}` : `http://${config.host}:${actualPort}`,
-        startedAt: Date.now()
-      });
-      let shuttingDown = false;
-      const shutdown = async () => {
-        if (shuttingDown) return;
-        shuttingDown = true;
-        // Stop accepting new connections before tearing down sessions.
-        server.stop(true);
-        await sessionManager.destroyAll();
-        await removeServerLock();
-        process.exit(0);
-      };
-      process.once('SIGINT', () => void shutdown());
-      process.once('SIGTERM', () => void shutdown());
+  if (false) {
+    program.command('server').description('Start a Claude Code session server (removed in MiniClaude)').action(async () => {
+      console.error('Server feature is not available in MiniClaude');
+      process.exit(1);
     });
   }
 
@@ -4015,43 +3892,10 @@ async function run(): Promise<CommanderCommand> {
   // claude connect — subcommand only handles -p (headless) mode.
   // Interactive mode (without -p) is handled by early argv rewriting in main()
   // which redirects to the main command with full TUI support.
-  if (feature('DIRECT_CONNECT')) {
-    program.command('open <cc-url>').description('Connect to a Claude Code server (internal — use cc:// URLs)').option('-p, --print [prompt]', 'Print mode (headless)').option('--output-format <format>', 'Output format: text, json, stream-json', 'text').action(async (ccUrl: string, opts: {
-      print?: string | boolean;
-      outputFormat: string;
-    }) => {
-      const {
-        parseConnectUrl
-      } = await import('./server/parseConnectUrl.js');
-      const {
-        serverUrl,
-        authToken
-      } = parseConnectUrl(ccUrl);
-      let connectConfig;
-      try {
-        const session = await createDirectConnectSession({
-          serverUrl,
-          authToken,
-          cwd: getOriginalCwd(),
-          dangerouslySkipPermissions: _pendingConnect?.dangerouslySkipPermissions
-        });
-        if (session.workDir) {
-          setOriginalCwd(session.workDir);
-          setCwdState(session.workDir);
-        }
-        setDirectConnectServerUrl(serverUrl);
-        connectConfig = session.config;
-      } catch (err) {
-        // biome-ignore lint/suspicious/noConsole: intentional error output
-        console.error(err instanceof DirectConnectError ? err.message : String(err));
-        process.exit(1);
-      }
-      const {
-        runConnectHeadless
-      } = await import('./server/connectHeadless.js');
-      const prompt = typeof opts.print === 'string' ? opts.print : '';
-      const interactive = opts.print === true;
-      await runConnectHeadless(connectConfig, prompt, opts.outputFormat, interactive);
+  if (false) {
+    program.command('open <cc-url>').description('Connect to a Claude Code server (internal — use cc:// URLs)').option('-p, --print [prompt]', 'Print mode (headless)').option('--output-format <format>', 'Output format: text, json, stream-json', 'text').action(async () => {
+      console.error('Direct connect feature is not available in MiniClaude');
+      process.exit(1);
     });
   }
 
@@ -4279,16 +4123,12 @@ async function run(): Promise<CommanderCommand> {
   // false via the try/catch — but not before paying ~65ms of side effects
   // (25ms settings Zod parse + 40ms sync `security` keychain subprocess).
   // The dynamic visibility never worked; the command was always hidden.
-  if (feature('BRIDGE_MODE')) {
+  if (false) {
     program.command('remote-control', {
       hidden: true
     }).alias('rc').description('Connect your local environment for remote-control sessions via claude.ai/code').action(async () => {
-      // Unreachable — cli.tsx fast-path handles this command before main.tsx loads.
-      // If somehow reached, delegate to bridgeMain.
-      const {
-        bridgeMain
-      } = await import('./bridge/bridgeMain.js');
-      await bridgeMain(process.argv.slice(3));
+      console.error('Bridge mode is not available in MiniClaude');
+      process.exit(1);
     });
   }
   if (feature('KAIROS')) {
@@ -4573,7 +4413,7 @@ function maybeActivateProactive(options: unknown): void {
     proactive?: boolean;
   }).proactive || isEnvTruthy(process.env.CLAUDE_CODE_PROACTIVE))) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const proactiveModule = require('./proactive/index.js');
+    const proactiveModule = null as unknown as typeof import('./proactive/index.js');
     if (!proactiveModule.isProactiveActive()) {
       proactiveModule.activateProactive('command');
     }

@@ -381,9 +381,8 @@ export async function getEnhancedPRAttribution(
   // squash commit body verbatim — trailer lines at the end become proper git
   // trailers on the squash commit.
   if (feature('COMMIT_ATTRIBUTION') && isInternal && attributionData) {
-    const { buildPRTrailers } = await import('./attributionTrailer.js')
-    const trailers = buildPRTrailers(attributionData, appState.attribution)
-    const result = `${summary}\n\n${trailers.join('\n')}`
+    // attributionTrailer.js removed — stub kept for feature gate structure
+    const result = `${summary}\n\n`
     logForDebugging(`PR Attribution: returning with trailers: ${result}`)
     return result
   }

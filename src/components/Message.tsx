@@ -249,14 +249,14 @@ function MessageImpl(t0) {
         if (feature("HISTORY_SNIP")) {
           const {
             isSnipBoundaryMessage
-          } = require("../services/compact/snipProjection.js") as typeof import('../services/compact/snipProjection.js');
+          } = null as unknown as typeof import("../services/compact/snipProjection.js");
           const {
             isSnipMarkerMessage
-          } = require("../services/compact/snipCompact.js") as typeof import('../services/compact/snipCompact.js');
+          } = null as unknown as typeof import("../services/compact/snipCompact.js");
           if (isSnipBoundaryMessage(message)) {
             let t2;
             if ($[65] === Symbol.for("react.memo_cache_sentinel")) {
-              t2 = require("./messages/SnipBoundaryMessage.js");
+              t2 = null as unknown as typeof import("./messages/SnipBoundaryMessage.js");
               $[65] = t2;
             } else {
               t2 = $[65];

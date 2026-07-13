@@ -13,10 +13,10 @@ import {
 import { buildPostCompactMessages } from './services/compact/compact.js'
 /* eslint-disable @typescript-eslint/no-require-imports */
 const reactiveCompact = feature('REACTIVE_COMPACT')
-  ? (require('./services/compact/reactiveCompact.js') as typeof import('./services/compact/reactiveCompact.js'))
+  ? (null as unknown as typeof import('./services/compact/reactiveCompact.js'))
   : null
 const contextCollapse = feature('CONTEXT_COLLAPSE')
-  ? (require('./services/contextCollapse/index.js') as typeof import('./services/contextCollapse/index.js'))
+  ? (null as unknown as typeof import('./services/contextCollapse/index.js'))
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import {
@@ -64,10 +64,10 @@ import {
 } from './utils/attachments.js'
 /* eslint-disable @typescript-eslint/no-require-imports */
 const skillPrefetch = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (require('./services/skillSearch/prefetch.js') as typeof import('./services/skillSearch/prefetch.js'))
+  ? (null as unknown as typeof import('./services/skillSearch/prefetch.js'))
   : null
 const jobClassifier = feature('TEMPLATES')
-  ? (require('./jobs/classifier.js') as typeof import('./jobs/classifier.js'))
+  ? (null as unknown as typeof import('./jobs/classifier.js'))
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import {
@@ -114,10 +114,10 @@ import { count } from './utils/array.js'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const snipModule = feature('HISTORY_SNIP')
-  ? (require('./services/compact/snipCompact.js') as typeof import('./services/compact/snipCompact.js'))
+  ? (null as unknown as typeof import('./services/compact/snipCompact.js'))
   : null
 const taskSummaryModule = feature('BG_SESSIONS')
-  ? (require('./utils/taskSummary.js') as typeof import('./utils/taskSummary.js'))
+  ? (null as unknown as typeof import('./utils/taskSummary.js'))
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 

@@ -64,11 +64,7 @@ const LEGACY_BRIEF_TOOL_NAME: string | null =
         require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')
       ).LEGACY_BRIEF_TOOL_NAME
     : null
-const SEND_USER_FILE_TOOL_NAME: string | null = feature('KAIROS')
-  ? (
-      require('../tools/SendUserFileTool/prompt.js') as typeof import('../tools/SendUserFileTool/prompt.js')
-    ).SEND_USER_FILE_TOOL_NAME
-  : null
+const SEND_USER_FILE_TOOL_NAME: string | null = null
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
@@ -489,20 +485,8 @@ export async function loadConversationForResume(
       // that are actively writing their own transcript.
       const logsPromise = loadMessageLogs()
       let skip = new Set<string>()
-      if (feature('BG_SESSIONS')) {
-        try {
-          const { listAllLiveSessions } = await import('./udsClient.js')
-          const live = await listAllLiveSessions()
-          skip = new Set(
-            live.flatMap(s =>
-              s.kind && s.kind !== 'interactive' && s.sessionId
-                ? [s.sessionId]
-                : [],
-            ),
-          )
-        } catch {
-          // UDS unavailable — treat all sessions as continuable
-        }
+      if (false) {
+        // BG_SESSIONS feature — modules removed in MiniClaude
       }
       const logs = await logsPromise
       log =

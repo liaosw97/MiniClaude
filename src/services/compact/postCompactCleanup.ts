@@ -41,11 +41,7 @@ export function runPostCompactCleanup(querySource?: QuerySource): void {
   resetMicrocompactState()
   if (feature('CONTEXT_COLLAPSE')) {
     if (isMainThreadCompact) {
-      /* eslint-disable @typescript-eslint/no-require-imports */
-      ;(
-        require('../contextCollapse/index.js') as typeof import('../contextCollapse/index.js')
-      ).resetContextCollapse()
-      /* eslint-enable @typescript-eslint/no-require-imports */
+      // contextCollapse/index.js removed — stub kept for feature gate structure
     }
   }
   if (isMainThreadCompact) {
@@ -69,9 +65,7 @@ export function runPostCompactCleanup(querySource?: QuerySource): void {
   // cacheUtils resets. See compactConversation() for full rationale.
   clearBetaTracingState()
   if (feature('COMMIT_ATTRIBUTION')) {
-    void import('../../utils/attributionHooks.js').then(m =>
-      m.sweepFileContentCache(),
-    )
+    // attributionHooks.js removed — stub kept for feature gate structure
   }
   clearSessionMessagesCache()
 }

@@ -16,9 +16,7 @@ import { TASK_OUTPUT_TOOL_NAME } from '../../tools/TaskOutputTool/constants.js'
 import { TASK_STOP_TOOL_NAME } from '../../tools/TaskStopTool/prompt.js'
 import { TASK_UPDATE_TOOL_NAME } from '../../tools/TaskUpdateTool/constants.js'
 
-import { TEAM_DELETE_TOOL_NAME } from '../../tools/TeamDeleteTool/constants.js'
-const SEND_MESSAGE_TOOL_NAME = 'send_message';
-const TEAM_CREATE_TOOL_NAME = 'team_create';
+const TEAM_DELETE_TOOL_NAME = 'TeamDelete'
 import { TODO_WRITE_TOOL_NAME } from '../../tools/TodoWriteTool/constants.js'
 import { TOOL_SEARCH_TOOL_NAME } from '../../tools/ToolSearchTool/prompt.js'
 import { YOLO_CLASSIFIER_TOOL_NAME } from './yoloClassifier.js'
@@ -27,25 +25,17 @@ import { YOLO_CLASSIFIER_TOOL_NAME } from './yoloClassifier.js'
 // Gates mirror tools.ts. Keeps the tool name strings out of cli.js.
 /* eslint-disable @typescript-eslint/no-require-imports */
 const TERMINAL_CAPTURE_TOOL_NAME = feature('TERMINAL_PANEL')
-  ? (
-      require('../../tools/TerminalCaptureTool/prompt.js') as typeof import('../../tools/TerminalCaptureTool/prompt.js')
-    ).TERMINAL_CAPTURE_TOOL_NAME
+  ? null as unknown as string
   : null
 const OVERFLOW_TEST_TOOL_NAME = feature('OVERFLOW_TEST_TOOL')
-  ? (
-      require('../../tools/OverflowTestTool/OverflowTestTool.js') as typeof import('../../tools/OverflowTestTool/OverflowTestTool.js')
-    ).OVERFLOW_TEST_TOOL_NAME
+  ? null as unknown as string
   : null
 const VERIFY_PLAN_EXECUTION_TOOL_NAME =
   process.env.USER_TYPE === 'ant'
-    ? (
-        require('../../tools/VerifyPlanExecutionTool/constants.js') as typeof import('../../tools/VerifyPlanExecutionTool/constants.js')
-      ).VERIFY_PLAN_EXECUTION_TOOL_NAME
+    ? null as unknown as string
     : null
 const WORKFLOW_TOOL_NAME = feature('WORKFLOW_SCRIPTS')
-  ? (
-      require('../../tools/WorkflowTool/constants.js') as typeof import('../../tools/WorkflowTool/constants.js')
-    ).WORKFLOW_TOOL_NAME
+  ? null as unknown as string
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 
