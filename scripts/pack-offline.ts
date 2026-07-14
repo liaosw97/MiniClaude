@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, rmSync, statSync } from 'fs';
-import { join, basename } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, rmSync, statSync, readdirSync } from 'fs';
+import { join, basename, resolve } from 'path';
 import { execSync } from 'child_process';
 
 const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf-8'));
@@ -33,6 +33,7 @@ async function copyRipgrepForPlatform(
   const rgBinary = platform === 'win32' ? 'rg.exe' : 'rg';
   const rgSrc = join(vendorSrc, platformDir, rgBinary);
 
+  // 1. Try src/vendor/ first
   if (existsSync(rgSrc)) {
     const vendorDest = join(pkgDir, 'vendor', 'ripgrep', platformDir);
     mkdirSync(vendorDest, { recursive: true });
@@ -41,12 +42,27 @@ async function copyRipgrepForPlatform(
     return;
   }
 
-  // Binary not found — try to download it automatically
+  // 2. Not found in vendor — search node_modules for existing binary
+  const projectRoot = resolve(import.meta.dirname, '..');
+  const nmRgPath = findRgInNodeModules(projectRoot, rgBinary, platformDir);
+  if (nmRgPath) {
+    // Copy to src/vendor/ for future reuse
+    mkdirSync(join(vendorSrc, platformDir), { recursive: true });
+    cpSync(nmRgPath, join(vendorSrc, platformDir, rgBinary));
+    console.log(`  ✅ Copied ripgrep from node_modules (${platformDir})`);
+
+    // Also copy to package
+    const vendorDest = join(pkgDir, 'vendor', 'ripgrep', platformDir);
+    mkdirSync(vendorDest, { recursive: true });
+    cpSync(nmRgPath, join(vendorDest, rgBinary));
+    return;
+  }
+
+  // 3. Not found anywhere — try to download
   console.warn(`⚠️  ripgrep binary not found for ${platformDir}, attempting download...`);
   try {
     const { fetchRipgrep } = await import('./fetch-ripgrep.js');
     await fetchRipgrep(platform, arch);
-    // Retry copy after download
     if (existsSync(rgSrc)) {
       const vendorDest = join(pkgDir, 'vendor', 'ripgrep', platformDir);
       mkdirSync(vendorDest, { recursive: true });
@@ -57,6 +73,48 @@ async function copyRipgrepForPlatform(
     console.warn(`⚠️  Could not download ripgrep for ${platformDir}`);
     console.warn('  Code search will be unavailable without system rg command');
   }
+}
+
+/**
+ * Search node_modules recursively for a ripgrep binary.
+ * Returns the first match path, or null if not found.
+ */
+function findRgInNodeModules(rootDir: string, binaryName: string, platformDir: string): string | null {
+  const nmDir = join(rootDir, 'node_modules');
+  if (!existsSync(nmDir)) return null;
+
+  // Search for vendor/ripgrep/<platformDir>/<binaryName> in any scoped or unscoped package
+  const searchPaths = [
+    // Direct match: any package/vendor/ripgrep/<platformDir>/<binaryName>
+    join('vendor', 'ripgrep', platformDir, binaryName),
+  ];
+
+  const entries = readdirSync(nmDir);
+  for (const entry of entries) {
+    const pkgDir = join(nmDir, entry);
+    if (!existsSync(pkgDir)) continue;
+
+    // Check unscoped packages
+    for (const relPath of searchPaths) {
+      const candidate = join(pkgDir, relPath);
+      if (existsSync(candidate)) return candidate;
+    }
+
+    // Check scoped packages (@scope/name)
+    if (entry.startsWith('@')) {
+      const scopedEntries = readdirSync(pkgDir);
+      for (const scoped of scopedEntries) {
+        const scopedPkgDir = join(pkgDir, scoped);
+        if (!existsSync(scopedPkgDir)) continue;
+        for (const relPath of searchPaths) {
+          const candidate = join(scopedPkgDir, relPath);
+          if (existsSync(candidate)) return candidate;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 async function createOfflinePackage(platform?: string) {
