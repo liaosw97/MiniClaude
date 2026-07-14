@@ -110,7 +110,7 @@ const result = await esbuild.build({
   metafile: enableMetafile,
   plugins: [bunBundlePlugin, mdTextPlugin, stubAntOnlyPlugin],
   banner: {
-    js: `import { createRequire } from 'module';const require = createRequire(import.meta.url);`,
+    js: `let require;if(typeof createRequire==='undefined'){const{createRequire:cr}=await import('module');require=cr(import.meta.url)}else require=createRequire(import.meta.url);`,
   },
   external: [
     'crypto',
