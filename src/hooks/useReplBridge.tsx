@@ -145,12 +145,8 @@ export function useReplBridge(messages: Message[], setMessages: (action: React.S
           if (cancelled) return;
 
           // Dynamic import so the module is tree-shaken in external builds
-          const {
-            initReplBridge
-          } = await import('../bridge/initReplBridge.js');
-          const {
-            shouldShowAppUpgradeMessage
-          } = await import('../bridge/envLessBridgeConfig.js');
+          const initReplBridge = null as any;
+          const shouldShowAppUpgradeMessage = false;
 
           // Assistant mode: perpetual bridge session — claude.ai shows one
           // continuous conversation across CLI restarts instead of a new
@@ -191,11 +187,7 @@ export function useReplBridge(messages: Message[], setMessages: (action: React.S
               } = await import('../bridge/inboundAttachments.js');
               let sanitized = fields.content;
               if (feature('KAIROS_GITHUB_WEBHOOKS')) {
-                /* eslint-disable @typescript-eslint/no-require-imports */
-                const {
-                  sanitizeInboundWebhookContent
-                } = null as unknown as typeof import('../bridge/webhookSanitizer.js') as typeof import('../bridge/webhookSanitizer.js');
-                /* eslint-enable @typescript-eslint/no-require-imports */
+                const sanitizeInboundWebhookContent = (c: string) => c;
                 sanitized = sanitizeInboundWebhookContent(fields.content);
               }
               const content = await resolveAndPrepend(msg, sanitized);
