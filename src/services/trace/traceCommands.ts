@@ -2,12 +2,29 @@
  * Trace CLI 命令
  */
 
-import { join } from 'path'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { startTraceServer, openBrowser } from './traceServer.js'
 import { listSessions, getSessionTrace, getTraceFilePath } from './traceStore.js'
 import { traceLogger } from './traceLogger.js'
 import { existsSync, readFileSync, createReadStream } from 'fs'
 import { createInterface } from 'readline'
+
+// ESM 兼容：获取当前模块的 __dirname 等效值
+const _dirname = (() => {
+  try {
+    if (typeof __dirname !== 'undefined' && !__dirname.includes('bundle')) return __dirname
+    const binPath = typeof process !== 'undefined' && process.argv[1]
+      ? dirname(process.argv[1])
+      : null
+    if (binPath && binPath !== '.') {
+      if (existsSync(join(binPath, 'viewer', 'viewer.html'))) {
+        return binPath
+      }
+    }
+  } catch {}
+  return dirname(fileURLToPath(import.meta.url))
+})()
 
 export async function traceCommand(args: string[]): Promise<void> {
   const subcommand = args[0]
@@ -113,9 +130,15 @@ async function traceExport(filePath: string, outputPath?: string): Promise<void>
   traceLogger.exportStarted(filePath)
 
   try {
-    // 读取 viewer.html 模板
-    const viewerPath = join(__dirname, 'viewer', 'viewer.html')
-    const viewerHtml = readFileSync(viewerPath, 'utf-8')
+    // 读取 viewer.html 模板（优先使用嵌入的宏）
+    let viewerHtml: string
+    const macroViewer = (typeof globalThis !== 'undefined' && (globalThis as any).MACRO_VIEWER_HTML) ?? ''
+    if (macroViewer) {
+      viewerHtml = macroViewer
+    } else {
+      const viewerPath = join(_dirname, 'viewer', 'viewer.html')
+      viewerHtml = readFileSync(viewerPath, 'utf-8')
+    }
 
     // 流式读取 JSONL 文件，逐行收集记录并 base64 编码
     const records: unknown[] = []

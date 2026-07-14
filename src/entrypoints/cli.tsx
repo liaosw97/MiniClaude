@@ -10,6 +10,14 @@ if (typeof MACRO === 'undefined') {
   };
 }
 
+// 将构建时嵌入的 viewer HTML 宏暴露到 globalThis
+// 编译二进制后，MACRO.VIEWER_HTML / MACRO.DASHBOARD_HTML 由构建脚本注入
+// 开发模式下 traceServer.ts 会回退到文件系统读取
+if (typeof MACRO !== 'undefined' && MACRO.VIEWER_HTML) {
+  (globalThis as any).MACRO_VIEWER_HTML = MACRO.VIEWER_HTML;
+  (globalThis as any).MACRO_DASHBOARD_HTML = MACRO.DASHBOARD_HTML;
+}
+
 // Bugfix for corepack auto-pinning, which adds yarnpkg to peoples' package.jsons
 // eslint-disable-next-line custom-rules/no-top-level-side-effects
 process.env.COREPACK_ENABLE_AUTO_PIN = '0';

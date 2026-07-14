@@ -4,11 +4,34 @@
  */
 
 import { readFileSync } from 'fs'
-import { join } from 'path'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { spawn } from 'child_process'
 import { createServer, type Server } from 'http'
 import { listSessions, getSessionTrace } from './traceStore.js'
 import { traceLogger } from './traceLogger.js'
+
+// ESM 兼容：获取当前模块的 __dirname 等效值
+// 编译后的二进制中 import.meta.url 不可靠，改用 process.argv[1]
+const _dirname = (() => {
+  try {
+    // 优先使用二进制所在路径（编译后）
+    if (typeof __dirname !== 'undefined' && !__dirname.includes('bundle')) return __dirname
+    // 二进制路径（编译后，cli 与其 viewer 同目录）
+    const binPath = typeof process !== 'undefined' && process.argv[1]
+      ? dirname(process.argv[1])
+      : null
+    if (binPath && binPath !== '.') {
+      // 检查 viewer 文件是否存在
+      const { existsSync } = require('fs')
+      if (existsSync(join(binPath, 'viewer', 'viewer.html'))) {
+        return binPath
+      }
+    }
+  } catch {}
+  // 开发模式：使用 ESM 路径
+  return dirname(fileURLToPath(import.meta.url))
+})()
 
 export interface TraceServerOptions {
   port?: number
@@ -305,16 +328,24 @@ function handleTraceRequest(
 export async function startTraceServer(options: TraceServerOptions = {}): Promise<{ port: number; stop: () => void }> {
   const { port = 3845, onPort } = options
 
-  // 读取 viewer 文件（Bun 和 Node 共享）
-  const viewerPath = join(__dirname, 'viewer', 'viewer.html')
-  const dashboardPath = join(__dirname, 'viewer', 'dashboard.html')
-
+  // 读取 viewer 文件（优先使用嵌入的宏，回退到文件系统）
   let viewerHtml: string
   let dashboardHtml: string
 
   try {
-    viewerHtml = readFileSync(viewerPath, 'utf-8')
-    dashboardHtml = readFileSync(dashboardPath, 'utf-8')
+    // 编译后的二进制优先使用嵌入的 HTML
+    const macroViewer = (typeof globalThis !== 'undefined' && (globalThis as any).MACRO_VIEWER_HTML) ?? ''
+    const macroDashboard = (typeof globalThis !== 'undefined' && (globalThis as any).MACRO_DASHBOARD_HTML) ?? ''
+    if (macroViewer && macroDashboard) {
+      viewerHtml = macroViewer
+      dashboardHtml = macroDashboard
+    } else {
+      // 开发模式：从文件系统读取
+      const viewerPath = join(_dirname, 'viewer', 'viewer.html')
+      const dashboardPath = join(_dirname, 'viewer', 'dashboard.html')
+      viewerHtml = readFileSync(viewerPath, 'utf-8')
+      dashboardHtml = readFileSync(dashboardPath, 'utf-8')
+    }
   } catch (error) {
     throw new Error(`Failed to read viewer files: ${error}`)
   }

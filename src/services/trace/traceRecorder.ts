@@ -3,7 +3,7 @@
  * 负责拦截 API 请求和响应
  */
 
-import { appendTraceRecord } from './traceStore.js'
+import { appendTraceRecord, createSessionEntry, updateSessionEntry } from './traceStore.js'
 import { broadcastTraceRecord } from './traceServer.js'
 import type { TraceRecord } from './types.js'
 import { traceLogger } from './traceLogger.js'
@@ -174,6 +174,14 @@ export function createTraceFetch(
             }
           }
           await appendTraceRecord(sessionId, responseRecord, undefined, configDir)
+          // 更新 session 索引统计
+          const inputTokens = (usage as any)?.input_tokens ?? 0
+          const outputTokens = (usage as any)?.output_tokens ?? 0
+          await updateSessionEntry(sessionId, {
+            turns: 1,
+            totalInputTokens: inputTokens,
+            totalOutputTokens: outputTokens,
+          }, configDir).catch(() => {})
         } catch (error) {
           traceLogger.error('Failed to parse SSE stream', error)
         }
@@ -205,6 +213,15 @@ export function createTraceFetch(
             }
           }
           await appendTraceRecord(sessionId, responseRecord, undefined, configDir)
+          // 更新 session 索引统计
+          const usage = responseBody?.usage
+          const inputTokens = usage?.input_tokens ?? 0
+          const outputTokens = usage?.output_tokens ?? 0
+          await updateSessionEntry(sessionId, {
+            turns: 1,
+            totalInputTokens: inputTokens,
+            totalOutputTokens: outputTokens,
+          }, configDir).catch(() => {})
         } catch (error) {
           // 忽略响应解析错误
         }

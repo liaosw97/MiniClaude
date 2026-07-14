@@ -9,6 +9,14 @@ const enableMetafile = args.includes('--metafile');
 const pkg = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf-8'));
 const version = pkg.version;
 
+// 读取 viewer HTML 文件，嵌入到二进制中
+const viewerPath = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'viewer.html');
+const dashboardPath = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'dashboard.html');
+const viewerHtmlContent = (() => {
+  try { return { viewer: readFileSync(viewerPath, 'utf-8'), dashboard: readFileSync(dashboardPath, 'utf-8') }; }
+  catch { return { viewer: '', dashboard: '' }; }
+})();
+
 const buildTime = new Date().toISOString();
 const srcDir = join(import.meta.dirname, '..', 'src');
 
@@ -165,6 +173,8 @@ const result = await esbuild.build({
       'This reconstructed source snapshot does not include Anthropic internal issue routing.',
     ),
     'MACRO.VERSION_CHANGELOG': JSON.stringify('https://github.com/paoloanzn/claude-code'),
+    'MACRO.VIEWER_HTML': JSON.stringify(viewerHtmlContent?.viewer ?? ''),
+    'MACRO.DASHBOARD_HTML': JSON.stringify(viewerHtmlContent?.dashboard ?? ''),
   },
   logLevel: 'info',
 });

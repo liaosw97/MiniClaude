@@ -153,6 +153,14 @@ function getTargetByName(name: string): { target: string; outfile: string } | nu
 const buildTime = new Date().toISOString()
 const version = dev ? getDevVersion(pkg.version) : pkg.version
 
+// 读取 viewer HTML 文件，嵌入到二进制中
+const viewerPath = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'viewer.html')
+const dashboardPath = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'dashboard.html')
+const viewerHtmlContent = (() => {
+  try { return { viewer: readFileSync(viewerPath, 'utf-8'), dashboard: readFileSync(dashboardPath, 'utf-8') } }
+  catch { return { viewer: '', dashboard: '' } }
+})()
+
 // 构建单个目标平台
 function buildTarget(targetName: string, targetConfig: { target: string; outfile: string }) {
   const outfile = join('./dist', targetConfig.outfile)
@@ -190,6 +198,8 @@ function buildTarget(targetName: string, targetConfig: { target: string; outfile
     'MACRO.VERSION_CHANGELOG': JSON.stringify(
       dev ? getVersionChangelog() : 'https://github.com/paoloanzn/claude-code',
     ),
+    'MACRO.VIEWER_HTML': JSON.stringify(viewerHtmlContent?.viewer ?? ''),
+    'MACRO.DASHBOARD_HTML': JSON.stringify(viewerHtmlContent?.dashboard ?? ''),
   } as const
 
   const cmd = [
@@ -311,6 +321,8 @@ if (compile) {
     'MACRO.VERSION_CHANGELOG': JSON.stringify(
       dev ? getVersionChangelog() : 'https://github.com/paoloanzn/claude-code',
     ),
+    'MACRO.VIEWER_HTML': JSON.stringify(viewerHtmlContent?.viewer ?? ''),
+    'MACRO.DASHBOARD_HTML': JSON.stringify(viewerHtmlContent?.dashboard ?? ''),
   } as const
 
   const cmd = [
@@ -355,6 +367,16 @@ if (compile) {
 
   if (existsSync(outfile)) {
     chmodSync(outfile, 0o755)
+    // 非编译模式下，Bun 输出的是 JS bundle 以 // @bun 开头。
+    // 在 Windows 上，shell 无法直接执行这个 JS 会报错。
+    // 需要生成一个 .cmd 包装器。
+    if (process.platform === 'win32') {
+      const wrapper = `@echo off
+bun run "%~dp0${require('path').basename(outfile)}" %*
+`
+      Bun.write(outfile + '.cmd', wrapper)
+      console.log(`  + Created ${outfile}.cmd wrapper for Windows`)
+    }
   }
 
   console.log(`✅ Built ${outfile}`)
