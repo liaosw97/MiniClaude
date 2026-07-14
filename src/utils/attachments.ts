@@ -85,19 +85,16 @@ import uniqBy from 'lodash-es/uniqBy.js'
 import { getProjectRoot } from '../bootstrap/state.js'
 import { formatCommandsWithinBudget } from '../tools/SkillTool/prompt.js'
 import { getContextWindowForModel } from './context.js'
-import type { DiscoverySignal } from '../services/skillSearch/signals.js'
+// DiscoverySignal type — defined locally; original came from skillSearch/signals.js (removed in MiniClaude)
+type DiscoverySignal = 'automatic' | 'keyword' | 'explicit' | 'startup'
+
 // Conditional require for DCE. All skill-search string literals that would
 // otherwise leak into external builds live inside these modules. The only
 // surfaces in THIS file are: the maybe() call (gated via spread below) and
 // the skill_listing suppression check (uses the same skillSearchModules null
 // check). The type-only DiscoverySignal import above is erased at compile time.
 /* eslint-disable @typescript-eslint/no-require-imports */
-const skillSearchModules = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? {
-      featureCheck: null as unknown as typeof import('../services/skillSearch/featureCheck.js'),
-      prefetch: null as unknown as typeof import('../services/skillSearch/prefetch.js'),
-    }
-  : null
+const skillSearchModules = null
 const autoModeStateModule = feature('TRANSCRIPT_CLASSIFIER')
   ? (require('./permissions/autoModeState.js') as typeof import('./permissions/autoModeState.js'))
   : null

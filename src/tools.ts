@@ -34,16 +34,10 @@ const RemoteTriggerTool = feature('AGENT_TRIGGERS_REMOTE')
 const MonitorTool = feature('MONITOR_TOOL')
   ? null as unknown as typeof import('./tools/MonitorTool/MonitorTool.js').MonitorTool
   : null
-const SendUserFileTool = feature('KAIROS')
-  ? null as unknown as typeof import('./tools/SendUserFileTool/SendUserFileTool.js').SendUserFileTool
-  : null
 const PushNotificationTool =
   feature('KAIROS') || feature('KAIROS_PUSH_NOTIFICATION')
     ? null as unknown as typeof import('./tools/PushNotificationTool/PushNotificationTool.js').PushNotificationTool
     : null
-const SubscribePRTool = feature('KAIROS_GITHUB_WEBHOOKS')
-  ? null as unknown as typeof import('./tools/SubscribePRTool/SubscribePRTool.js').SubscribePRTool
-  : null
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 import { TaskOutputTool } from './tools/TaskOutputTool/TaskOutputTool.js'
 import { WebSearchTool } from './tools/WebSearchTool/WebSearchTool.js'
@@ -97,9 +91,6 @@ const WebBrowserTool = feature('WEB_BROWSER_TOOL')
   : null
 const SnipTool = feature('HISTORY_SNIP')
   ? null as unknown as typeof import('./tools/SnipTool/SnipTool.js').SnipTool
-  : null
-const WorkflowTool = feature('WORKFLOW_SCRIPTS')
-  ? (null as unknown as typeof import('./tools/WorkflowTool/WorkflowTool.js').WorkflowTool)
   : null
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 import type { ToolPermissionContext } from './Tool.js'
@@ -192,15 +183,12 @@ export function getAllBaseTools(): Tools {
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     ...(VerifyPlanExecutionTool ? [VerifyPlanExecutionTool] : []),
     ...(process.env.USER_TYPE === 'ant' && REPLTool ? [REPLTool] : []),
-    ...(WorkflowTool ? [WorkflowTool] : []),
     ...(SleepTool ? [SleepTool] : []),
     ...cronTools,
     ...(RemoteTriggerTool ? [RemoteTriggerTool] : []),
     ...(MonitorTool ? [MonitorTool] : []),
     BriefTool,
-    ...(SendUserFileTool ? [SendUserFileTool] : []),
     ...(PushNotificationTool ? [PushNotificationTool] : []),
-    ...(SubscribePRTool ? [SubscribePRTool] : []),
     ...(getPowerShellTool() ? [getPowerShellTool()] : []),
     ...(SnipTool ? [SnipTool] : []),
     ...(process.env.NODE_ENV === 'test' ? [TestingPermissionTool] : []),

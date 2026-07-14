@@ -32,9 +32,7 @@ import {
 const teamMemPaths = feature('TEAMMEM')
   ? (null as unknown as typeof import('../memdir/teamMemPaths.js'))
   : null
-const teamMemWatcher = feature('TEAMMEM')
-  ? (null as unknown as typeof import('../services/teamMemorySync/watcher.js'))
-  : null
+const teamMemWatcher = null
 const memoryShapeTelemetry = feature('MEMORY_SHAPE_TELEMETRY')
   ? (null as unknown as typeof import('../memdir/memoryShapeTelemetry.js'))
   : null

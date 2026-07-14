@@ -27,9 +27,7 @@ const fetchMcpSkillsForClient = feature('MCP_SKILLS')
       return fn as typeof import('../../skills/mcpSkills.js').fetchMcpSkillsForClient
     })()
   : null
-const clearSkillIndexCache = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (() => {}) as unknown as typeof import('../skillSearch/localSearch.js').clearSkillIndexCache
-  : null
+const clearSkillIndexCache = null
 
 import {
   PromptListChangedNotificationSchema,

@@ -63,9 +63,7 @@ import {
   startRelevantMemoryPrefetch,
 } from './utils/attachments.js'
 /* eslint-disable @typescript-eslint/no-require-imports */
-const skillPrefetch = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (null as unknown as typeof import('./services/skillSearch/prefetch.js'))
-  : null
+const skillPrefetch = null
 const jobClassifier = feature('TEMPLATES')
   ? (null as unknown as typeof import('./jobs/classifier.js'))
   : null

@@ -4408,16 +4408,9 @@ async function logTenguInit({
     logError(error);
   }
 }
-function maybeActivateProactive(options: unknown): void {
-  if ((feature('PROACTIVE') || feature('KAIROS')) && ((options as {
-    proactive?: boolean;
-  }).proactive || isEnvTruthy(process.env.CLAUDE_CODE_PROACTIVE))) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const proactiveModule = null as unknown as typeof import('./proactive/index.js');
-    if (!proactiveModule.isProactiveActive()) {
-      proactiveModule.activateProactive('command');
-    }
-  }
+function maybeActivateProactive(_options: unknown): void {
+  // proactive mode removed in MiniClaude
+  return undefined
 }
 function maybeActivateBrief(options: unknown): void {
   if (!(feature('KAIROS') || feature('KAIROS_BRIEF'))) return;

@@ -83,9 +83,7 @@ const DISCOVER_SKILLS_TOOL_NAME: string | null = feature(
   : null
 // Capture the module (not .isSkillSearchEnabled directly) so spyOn() in tests
 // patches what we actually call — a captured function ref would point past the spy.
-const skillSearchFeatureCheck = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? null as unknown as typeof import('../services/skillSearch/featureCheck.js')
-  : null
+const skillSearchFeatureCheck = null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import type { OutputStyleConfig } from './outputStyles.js'
 import { CYBER_RISK_INSTRUCTION } from './cyberRiskInstruction.js'
