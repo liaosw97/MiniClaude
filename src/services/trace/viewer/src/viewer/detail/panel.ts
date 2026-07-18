@@ -51,32 +51,38 @@ function renderRequestOverview(entry: TraceEntry): string {
   const model = request.body?.model ?? 'unknown'
   const status = response.status
   const statusClass = status >= 200 && status < 300 ? 'success' : 'error'
+  const ts = new Date(entry.timestamp)
+  const timeStr = ts.toLocaleString()
 
   return `
     <div class="detail-overview">
-      <div class="detail-overview-header">
+      <div class="overview-top-bar">
         <span class="model-pill">${esc(model)}</span>
         <span class="status-pill ${statusClass}">${status}</span>
         <span class="duration-pill">${fmtDuration(entry.duration_ms)}</span>
       </div>
-      <div class="detail-overview-meta">
-        <div class="meta-row">
-          <span class="meta-label">Method</span>
-          <span class="meta-value">${esc(request.method)}</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Path</span>
-          <span class="meta-value">${esc(request.path)}</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Request ID</span>
-          <span class="meta-value">${esc(entry.request_id)}</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Timestamp</span>
-          <span class="meta-value">${esc(entry.timestamp)}</span>
-        </div>
-      </div>
+      <table class="meta-table">
+        <tr>
+          <td class="meta-label">Method</td>
+          <td class="meta-value"><code>${esc(request.method)}</code></td>
+          <td class="meta-label">Status</td>
+          <td class="meta-value"><span class="status-badge ${statusClass}">${status}</span></td>
+        </tr>
+        <tr>
+          <td class="meta-label">Path</td>
+          <td class="meta-value path-cell" colspan="3"><code>${esc(request.path)}</code></td>
+        </tr>
+        <tr>
+          <td class="meta-label">Request ID</td>
+          <td class="meta-value mono">${esc(entry.request_id)}</td>
+          <td class="meta-label">Duration</td>
+          <td class="meta-value mono">${fmtDuration(entry.duration_ms)}</td>
+        </tr>
+        <tr>
+          <td class="meta-label">Timestamp</td>
+          <td class="meta-value mono" colspan="3">${esc(timeStr)}</td>
+        </tr>
+      </table>
     </div>
   `
 }
@@ -94,13 +100,230 @@ function renderSystemPrompt(request: any): string {
     <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">System Prompt</span>
-        <span class="section-count">${text.length} chars</span>
+        <span class="section-badges">
+          <span class="section-badge">${text.split('\n').length} lines</span>
+          <span class="section-badge">${text.length.toLocaleString()} chars</span>
+        </span>
       </div>
-      <div class="detail-section-content">
-        <pre class="code-block">${esc(text)}</pre>
+      <div class="detail-section-content sysprompt-wrap">
+        ${renderMarkdownContent(text)}
       </div>
     </div>
   `
+}
+
+/**
+ * 将 Markdown 文本渲染为 HTML
+ */
+function renderMarkdownContent(text: string): string {
+  const lines = text.split('\n')
+  const html: string[] = []
+  let i = 0
+
+  // 先检查文本是否以类 XML 标签开头（如 <type>），如果是则整个作为 XML 块展示
+  const firstNonEmpty = lines.find(l => l.trim() !== '')
+  const isXmlDoc = firstNonEmpty && /^\s*<\w+[\s>]/.test(firstNonEmpty)
+
+  if (isXmlDoc) {
+    // 递归处理，让下方逐行逻辑接管
+    // 这里不做特殊处理，直接进入下面的 while 循环
+  }
+
+  while (i < lines.length) {
+    const line = lines[i]!
+
+    // 代码块 ```lang ... ```
+    if (line.startsWith('```')) {
+      const lang = line.slice(3).trim()
+      const codeLines: string[] = []
+      i++
+      while (i < lines.length && !lines[i]!.startsWith('```')) {
+        codeLines.push(lines[i]!)
+        i++
+      }
+      i++ // skip closing ```
+      html.push(`<div class="md-code-block">
+        ${lang ? `<div class="md-code-lang">${esc(lang)}</div>` : ''}
+        <pre class="code-block"><code>${esc(codeLines.join('\n'))}</code></pre>
+      </div>`)
+      continue
+    }
+
+    // 标题 ##
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/)
+    if (headingMatch) {
+      const level = headingMatch[1]!.length
+      const title = headingMatch[2]!
+      html.push(`<div class="md-heading md-h${level}">${esc(title)}</div>`)
+      i++
+      continue
+    }
+
+    // 水平线 ---
+    if (/^---+\s*$/.test(line)) {
+      html.push(`<hr class="md-hr">`)
+      i++
+      continue
+    }
+
+    // 引用块 >
+    if (line.startsWith('> ')) {
+      const quoteLines: string[] = [line.slice(2)]
+      i++
+      while (i < lines.length && lines[i]!.startsWith('> ')) {
+        quoteLines.push(lines[i]!.slice(2))
+        i++
+      }
+      html.push(`<blockquote class="md-blockquote"><p>${esc(quoteLines.join('\n'))}</p></blockquote>`)
+      continue
+    }
+
+    // 列表 - 或 *
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = [line.replace(/^[-*]\s+/, '')]
+      i++
+      while (i < lines.length && /^[-*]\s+/.test(lines[i]!)) {
+        items.push(lines[i]!.replace(/^[-*]\s+/, ''))
+        i++
+      }
+      const listHtml = items.map(item => `<li>${esc(item)}</li>`).join('')
+      html.push(`<ul class="md-list">${listHtml}</ul>`)
+      continue
+    }
+
+    // 有序列表 1.
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = [line.replace(/^\d+\.\s+/, '')]
+      i++
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i]!)) {
+        items.push(lines[i]!.replace(/^\d+\.\s+/, ''))
+        i++
+      }
+      const listHtml = items.map(item => `<li>${esc(item)}</li>`).join('')
+      html.push(`<ol class="md-list">${listHtml}</ol>`)
+      continue
+    }
+
+    // 空行
+    if (line.trim() === '') {
+      i++
+      continue
+    }
+
+    // 类 XML 标签块（如 <type> ... </type>）—— 标签行高亮，内部内容 Markdown 渲染
+    if (line.trimStart().startsWith('<') && /^<\w+/.test(line.trimStart())) {
+      const xmlLines: string[] = [line]
+      const tagName = line.trimStart().match(/^<(\w+)/)?.[1]
+      i++
+      while (i < lines.length) {
+        const next = lines[i]!
+        if (tagName && new RegExp(`^\\s*</${tagName}>\\s*$`).test(next)) {
+          xmlLines.push(next)
+          i++
+          break
+        }
+        xmlLines.push(next)
+        i++
+      }
+      while (i < lines.length && lines[i]!.trim() === '') {
+        i++
+      }
+
+      // 标签行高亮
+      const openTag = renderXmlHighlight(xmlLines[0]!)
+      const closeTag = renderXmlHighlight(xmlLines[xmlLines.length - 1]!)
+
+      // 内部内容：去掉标签行，按 Markdown 渲染
+      const bodyLines = xmlLines.slice(1, -1)
+      const bodyText = bodyLines.map(l => l.replace(/^\s+/, '')).join('\n').trim()
+      const bodyHtml = bodyText ? renderMarkdownContent(bodyText) : ''
+
+      html.push(`<div class="md-xml-inline">
+        <div class="xml-tag-line">${openTag}</div>
+        ${bodyHtml ? `<div class="xml-body-content">${bodyHtml}</div>` : ''}
+        <div class="xml-tag-line">${closeTag}</div>
+      </div>`)
+      continue
+    }
+
+    // 普通段落（收集连续的非空行）
+    const paraLines: string[] = [line]
+    i++
+    while (i < lines.length && lines[i]!.trim() !== '' && !lines[i]!.startsWith('```') && !/^#{1,6}\s/.test(lines[i]!)) {
+      paraLines.push(lines[i]!)
+      i++
+    }
+    const paraText = paraLines.join(' ')
+    html.push(`<p class="md-paragraph">${renderInlineMarkdown(esc(paraText))}</p>`)
+  }
+
+  return html.join('\n')
+}
+
+/**
+ * 渲染行内 Markdown（粗体、行内代码、链接）
+ */
+function renderInlineMarkdown(text: string): string {
+  // 行内代码 `code`
+  text = text.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>')
+  // 粗体 **text**
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  // 链接 [text](url)
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="md-link" href="$2" target="_blank" rel="noopener">$1</a>')
+  return text
+}
+
+/**
+ * 对类 XML 标签内容进行语法高亮
+ * 标签名、属性名、属性值分别用不同颜色
+ */
+function renderXmlHighlight(text: string): string {
+  // 先对整个文本统一转义
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  const lines = escaped.split('\n')
+  const result: string[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trimStart()
+    const indent = line.slice(0, line.length - trimmed.length)
+
+    // 匹配所有标签（包括闭合标签）并高亮
+    let processed = trimmed
+      .replace(
+        /(&lt;)(\/?)(\w[\w-]*)((?:\s+(?:[\w-]+(?:=(?:"[^"]*"|'[^']*'|[\w-]+))?))*)\s*(\/?)(&gt;)/g,
+        (_match, lt, slash, tagName, attrs, selfClose, gt) => {
+          const attrsHighlighted = attrs
+            .replace(/ ([\w-]+)(=)/g, ' <span class="xml-attr">$1</span>$2')
+            .replace(/="([^"]*)"/g, '=<span class="xml-val">"$1"</span>')
+            .replace(/='([^']*)'/g, "=<span class='xml-val'>'$1'</span>")
+          return `${lt}<span class="xml-tag">${slash}${tagName}</span>${attrsHighlighted}${selfClose}${gt}`
+        }
+      )
+
+    // 处理 user:/assistant: 前缀（行首，在示例代码中）
+    processed = processed
+      .replace(/^(user|assistant):/gmi, '<span class="xml-role-example">$1</span>:')
+
+    // 处理 [saved xxx] 标记
+    processed = processed
+      .replace(/\[(saved|saves|save)[^\]]*\]/gi, '<span class="xml-note">$&</span>')
+
+    // 处理 <type> 块中的特殊字段名 (name, description, when_to_save, how_to_use, examples)
+    processed = processed
+      .replace(/\b(name|description|when_to_save|how_to_use|body_structure|type)\b(?=\s*:)/gi, '<span class="xml-field">$1</span>')
+
+    // 处理 --- 分隔符
+    processed = processed
+      .replace(/^---+$/gm, '<span class="xml-separator">$&</span>')
+
+    result.push(indent + processed)
+  }
+
+  return result.join('\n')
 }
 
 /**
@@ -138,7 +361,9 @@ function renderMessages(request: any): string {
     <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">Messages</span>
-        <span class="section-count">${messages.length} messages</span>
+        <span class="section-badges">
+          <span class="section-badge">${messages.length} messages</span>
+        </span>
       </div>
       <div class="detail-section-content">
         ${messageHtml}
@@ -155,22 +380,24 @@ function renderTools(request: any): string {
   if (tools.length === 0) return ''
 
   const toolHtml = tools.map(tool => `
-    <div class="tool-item">
-      <div class="tool-header">
-        <span class="tool-name">${esc(tool.name)}</span>
-      </div>
-      ${tool.description ? `<div class="tool-description">${esc(tool.description)}</div>` : ''}
-    </div>
+    <tr class="tool-row">
+      <td class="tool-name-cell"><code>${esc(tool.name)}</code></td>
+      <td class="tool-desc-cell">${tool.description ? esc(tool.description) : '<span class="tool-no-desc">—</span>'}</td>
+    </tr>
   `).join('')
 
   return `
     <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">Tools</span>
-        <span class="section-count">${tools.length} tools</span>
+        <span class="section-badges">
+          <span class="section-badge">${tools.length} tools</span>
+        </span>
       </div>
       <div class="detail-section-content">
-        ${toolHtml}
+        <table class="tools-table">
+          ${toolHtml}
+        </table>
       </div>
     </div>
   `
@@ -193,10 +420,12 @@ function renderResponseContent(response: any): string {
   // Thinking
   if (thinkingText) {
     html += `
-      <div class="detail-section thinking-section">
+      <div class="detail-section">
         <div class="detail-section-header">
           <span class="section-title">Thinking</span>
-          <span class="section-count">${thinkingText.length} chars</span>
+          <span class="section-badges">
+            <span class="section-badge">${thinkingText.length.toLocaleString()} chars</span>
+          </span>
         </div>
         <div class="detail-section-content">
           <pre class="code-block thinking">${esc(thinkingText)}</pre>
@@ -212,7 +441,9 @@ function renderResponseContent(response: any): string {
       <div class="detail-section">
         <div class="detail-section-header">
           <span class="section-title">Response</span>
-          <span class="section-count">${text.length} chars</span>
+          <span class="section-badges">
+            <span class="section-badge">${text.length.toLocaleString()} chars</span>
+          </span>
         </div>
         <div class="detail-section-content">
           <pre class="code-block">${esc(text)}</pre>
@@ -226,8 +457,9 @@ function renderResponseContent(response: any): string {
     const toolHtml = toolUseBlocks.map(tool => `
       <div class="tool-use-item">
         <div class="tool-use-header">
-          <span class="tool-name">${esc(tool.name ?? '')}</span>
-          <span class="tool-id">${esc(tool.id ?? '')}</span>
+          <span class="tool-use-icon">⚙</span>
+          <span class="tool-use-name">${esc(tool.name ?? '')}</span>
+          <span class="tool-use-id">${esc(tool.id ?? '')}</span>
         </div>
         <div class="tool-use-input">
           <pre class="code-block">${esc(JSON.stringify(tool.input, null, 2))}</pre>
@@ -239,10 +471,14 @@ function renderResponseContent(response: any): string {
       <div class="detail-section">
         <div class="detail-section-header">
           <span class="section-title">Tool Uses</span>
-          <span class="section-count">${toolUseBlocks.length} calls</span>
+          <span class="section-badges">
+            <span class="section-badge">${toolUseBlocks.length} calls</span>
+          </span>
         </div>
         <div class="detail-section-content">
-          ${toolHtml}
+          <div class="tool-uses-list">
+            ${toolHtml}
+          </div>
         </div>
       </div>
     `
@@ -258,33 +494,41 @@ function renderUsage(response: any): string {
   const usage = getUsage(response)
   if (!usage) return ''
 
+  const items: Array<{ label: string; value: number }> = [
+    { label: 'Input', value: usage.input_tokens },
+    { label: 'Output', value: usage.output_tokens },
+  ]
+  if (usage.cache_creation_input_tokens) { items.push({ label: 'Cache Write', value: usage.cache_creation_input_tokens }) }
+  if (usage.cache_read_input_tokens) { items.push({ label: 'Cache Read', value: usage.cache_read_input_tokens }) }
+
+  const total = items.reduce((s, i) => s + i.value, 0)
+
+  const usageHtml = items.map(item => {
+    const pct = total > 0 ? (item.value / total * 100) : 0
+    return `
+      <div class="usage-item">
+        <div class="usage-item-header">
+          <span class="usage-label">${item.label}</span>
+          <span class="usage-value">${fmtNumber(item.value)}</span>
+        </div>
+        <div class="usage-bar">
+          <div class="usage-bar-fill" style="width: ${pct.toFixed(1)}%"></div>
+        </div>
+      </div>
+    `
+  }).join('')
+
   return `
-    <div class="detail-section usage-section">
+    <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">Token Usage</span>
+        <span class="section-badges">
+          <span class="section-badge">${fmtNumber(total)} total</span>
+        </span>
       </div>
       <div class="detail-section-content">
-        <div class="usage-grid">
-          <div class="usage-item">
-            <span class="usage-label">Input</span>
-            <span class="usage-value">${fmtNumber(usage.input_tokens)}</span>
-          </div>
-          <div class="usage-item">
-            <span class="usage-label">Output</span>
-            <span class="usage-value">${fmtNumber(usage.output_tokens)}</span>
-          </div>
-          ${usage.cache_creation_input_tokens ? `
-            <div class="usage-item">
-              <span class="usage-label">Cache Write</span>
-              <span class="usage-value">${fmtNumber(usage.cache_creation_input_tokens)}</span>
-            </div>
-          ` : ''}
-          ${usage.cache_read_input_tokens ? `
-            <div class="usage-item">
-              <span class="usage-label">Cache Read</span>
-              <span class="usage-value">${fmtNumber(usage.cache_read_input_tokens)}</span>
-            </div>
-          ` : ''}
+        <div class="usage-list">
+          ${usageHtml}
         </div>
       </div>
     </div>

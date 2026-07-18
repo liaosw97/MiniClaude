@@ -32,6 +32,60 @@ describe('traceServer viewer path resolution', () => {
     await expect(startTraceServer({ port: 3990 })).rejects.toThrow()
   })
 
+  it('process.argv[1] 所在目录不存在时回退到父目录的 dist/viewer/ [spec:trace-recording#dist/ 目录作为回退路径]', async () => {
+    vi.resetModules()
+    // Simulate Node.js build product: argv[1] = /app/dist/miniclaude-node.js
+    const mockArgv1 = '/app/dist/miniclaude-node.js'
+    vi.stubGlobal('process', {
+      ...process,
+      argv: ['node', mockArgv1],
+    })
+
+    // argv[1] dir (/app/dist) 不包含 viewer/viewer.html
+    mockExistsSync.mockImplementation((path: string) => {
+      if (path.includes('viewer/viewer.html')) return false
+      if (path.includes('dist/viewer/viewer.html')) return true // dist/viewer/ exists
+      return false
+    })
+    mockReadFileSync.mockReturnValue('<!DOCTYPE html><html></html>')
+
+    // 模拟 Node.js 环境（无 Bun）
+    const origBun = (globalThis as any).Bun
+    delete (globalThis as any).Bun
+
+    try {
+      const { startTraceServer } = await import('../../../../src/services/trace/traceServer')
+      const server = await startTraceServer({ port: 3994 })
+      expect(server.port).toBe(3994)
+      server.stop()
+    } finally {
+      (globalThis as any).Bun = origBun
+    }
+  })
+
+  it('所有回退路径均失败时应抛出 Failed to read viewer files [spec:trace-recording#所有回退路径均失败时报错]', async () => {
+    vi.resetModules()
+    const mockArgv1 = '/app/dist/miniclaude-node.js'
+    vi.stubGlobal('process', {
+      ...process,
+      argv: ['node', mockArgv1],
+    })
+
+    // 所有路径都失败
+    mockExistsSync.mockReturnValue(false)
+    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT') })
+
+    const origBun = (globalThis as any).Bun
+    delete (globalThis as any).Bun
+
+    try {
+      const { startTraceServer } = await import('../../../../src/services/trace/traceServer')
+      await expect(startTraceServer({ port: 3995 })).rejects.toThrow('Failed to read viewer files')
+    } finally {
+      (globalThis as any).Bun = origBun
+    }
+  })
+
   it('开发模式下 viewer.html 可读时应成功启动', async () => {
     vi.resetModules()
     mockExistsSync.mockReturnValue(true)

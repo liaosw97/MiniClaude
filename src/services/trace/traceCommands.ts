@@ -21,8 +21,16 @@ const _dirname = (() => {
       if (existsSync(join(binPath, 'viewer', 'viewer.html'))) {
         return binPath
       }
+      // [spec:trace-recording#trace export 命令同样支持 dist/ 回退]
+      const parentDir = join(binPath, '..')
+      const distViewerPath = join(parentDir, 'dist', 'viewer', 'viewer.html')
+      if (existsSync(distViewerPath)) {
+        return join(parentDir, 'dist')
+      }
     }
-  } catch {}
+  } catch (e) {
+    console.debug('[trace] _dirname fallback check failed:', e);
+  }
   return dirname(fileURLToPath(import.meta.url))
 })()
 

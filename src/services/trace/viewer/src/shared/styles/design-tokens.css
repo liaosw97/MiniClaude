@@ -11,8 +11,20 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
   --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
   --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap: 12px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --pad-sm: 8px;
+  --pad: 12px;
+  --pad-md: 16px;
+  --pad-lg: 24px;
   --radius: 10px;
   --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --transition-fast: 0.15s;
 
   --text: #1c2024;
   --text-secondary: #60646c;
@@ -35,27 +47,37 @@
   --orange: #f97316;
   --orange-bg: #fff7ed;
   --indigo: #6366f1;
+  --bg-input: #ffffff;
+  --shadow-color: rgba(0,0,0,0.06);
+  --shadow-color-heavy: rgba(0,0,0,0.12);
+  --text-code: #1c2024;
+  --scrollbar-thumb: #bbbec7;
+  --scrollbar-track: transparent;
 
   --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
 
   --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
 }
 
 [data-theme="dark"] {
   --bg: #0d1117;
   --bg-card: #161b22;
-  --bg-hover: #1c2128;
-  --bg-active: #252c35;
-  --bg-code: #1c2128;
-  --border: #30363d;
-  --border-light: #21262d;
+  --bg-hover: #21262d;
+  --bg-active: #2d333b;
+  --bg-code: #0d1117;
+  --border: #373e47;
+  --border-light: #2d333b;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
   --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
   --text: #e6edf3;
   --text-secondary: #8b949e;
-  --text-tertiary: #6e7681;
+  --text-tertiary: #8b949e;
   --blue: #58a6ff;
   --blue-bg: #0d2240;
   --green: #3fb950;
@@ -73,6 +95,12 @@
   --orange: #f0883e;
   --orange-bg: #2d1b00;
   --indigo: #8b8fff;
+  --bg-input: #0d1117;
+  --shadow-color: rgba(0,0,0,0.3);
+  --shadow-color-heavy: rgba(0,0,0,0.5);
+  --text-code: #e6edf3;
+  --scrollbar-thumb: #484f58;
+  --scrollbar-track: transparent;
   --accent-gradient: linear-gradient(135deg, #58a6ff, #bc8cff);
 }
 

@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
 import { join, resolve, dirname, isAbsolute } from 'path';
 
 const args = process.argv.slice(2);
@@ -188,6 +188,26 @@ if (result.errors.length > 0) {
 }
 
 console.log(`\n✅ Built dist/miniclaude-node.js (${dev ? 'dev' : 'production'})`);
+
+// 复制 viewer 文件到 dist/viewer/
+const viewerDistDir = join(distDir, 'viewer');
+if (!existsSync(viewerDistDir)) {
+  mkdirSync(viewerDistDir, { recursive: true });
+}
+try {
+  const viewerSrc = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'viewer.html');
+  const dashboardSrc = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'dashboard.html');
+  if (existsSync(viewerSrc)) {
+    copyFileSync(viewerSrc, join(viewerDistDir, 'viewer.html'));
+    console.log(`  + Copied viewer.html → dist/viewer/`);
+  }
+  if (existsSync(dashboardSrc)) {
+    copyFileSync(dashboardSrc, join(viewerDistDir, 'dashboard.html'));
+    console.log(`  + Copied dashboard.html → dist/viewer/`);
+  }
+} catch (err) {
+  console.warn(`  ⚠️ Warning: Failed to copy viewer files: ${(err as Error).message}`);
+}
 
 if (enableMetafile && result.metafile) {
   try {

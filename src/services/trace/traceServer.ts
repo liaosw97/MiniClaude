@@ -27,8 +27,18 @@ const _dirname = (() => {
       if (existsSync(join(binPath, 'viewer', 'viewer.html'))) {
         return binPath
       }
+      // [spec:trace-recording#dist/ 目录作为回退路径]
+      // Node.js 构建产物：process.argv[1] 在 dist/miniclaude-node.js
+      // viewer 文件在 dist/viewer/viewer.html，需检查父目录的 dist/viewer/
+      const parentDir = join(binPath, '..')
+      const distViewerPath = join(parentDir, 'dist', 'viewer', 'viewer.html')
+      if (existsSync(distViewerPath)) {
+        return join(parentDir, 'dist')
+      }
     }
-  } catch {}
+  } catch (e) {
+    console.debug('[trace] _dirname fallback check failed:', e);
+  }
   // 开发模式：使用 ESM 路径
   return dirname(fileURLToPath(import.meta.url))
 })()

@@ -5,8 +5,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
 
 /* ─── Header ─── */
 .header {
-  display: flex; align-items: center; gap: 16px;
-  padding: 0 20px; min-height: 52px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px; min-height: 44px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0; z-index: 10;
@@ -16,10 +16,10 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: var(--accent-gradient);
 }
-.header .logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.header .logo { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .header .logo svg { width: 22px; height: 22px; }
 .header .logo span {
-  font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+  font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
   background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -42,8 +42,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
 
 /* ─── Stats ─── */
 .stats {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 12px; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--text-secondary);
   margin-left: auto;
 }
 .stats .stat-item { display: flex; align-items: center; gap: 4px; }
@@ -293,4 +293,5 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
 @media (max-width: 768px) {
   .header .logo span { display: none; }
   .stats { display: none; }
+  .search-input { font-size: 16px; }
 }

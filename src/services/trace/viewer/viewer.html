@@ -18,8 +18,20 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
   --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
   --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap: 12px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --pad-sm: 8px;
+  --pad: 12px;
+  --pad-md: 16px;
+  --pad-lg: 24px;
   --radius: 10px;
   --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --transition-fast: 0.15s;
 
   --text: #1c2024;
   --text-secondary: #60646c;
@@ -42,27 +54,37 @@
   --orange: #f97316;
   --orange-bg: #fff7ed;
   --indigo: #6366f1;
+  --bg-input: #ffffff;
+  --shadow-color: rgba(0,0,0,0.06);
+  --shadow-color-heavy: rgba(0,0,0,0.12);
+  --text-code: #1c2024;
+  --scrollbar-thumb: #bbbec7;
+  --scrollbar-track: transparent;
 
   --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
 
   --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
 }
 
 [data-theme="dark"] {
   --bg: #0d1117;
   --bg-card: #161b22;
-  --bg-hover: #1c2128;
-  --bg-active: #252c35;
-  --bg-code: #1c2128;
-  --border: #30363d;
-  --border-light: #21262d;
+  --bg-hover: #21262d;
+  --bg-active: #2d333b;
+  --bg-code: #0d1117;
+  --border: #373e47;
+  --border-light: #2d333b;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
   --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
   --text: #e6edf3;
   --text-secondary: #8b949e;
-  --text-tertiary: #6e7681;
+  --text-tertiary: #8b949e;
   --blue: #58a6ff;
   --blue-bg: #0d2240;
   --green: #3fb950;
@@ -80,6 +102,12 @@
   --orange: #f0883e;
   --orange-bg: #2d1b00;
   --indigo: #8b8fff;
+  --bg-input: #0d1117;
+  --shadow-color: rgba(0,0,0,0.3);
+  --shadow-color-heavy: rgba(0,0,0,0.5);
+  --text-code: #e6edf3;
+  --scrollbar-thumb: #484f58;
+  --scrollbar-track: transparent;
   --accent-gradient: linear-gradient(135deg, #58a6ff, #bc8cff);
 }
 
@@ -106,8 +134,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
 
 /* ─── Header ─── */
 .header {
-  display: flex; align-items: center; gap: 16px;
-  padding: 0 20px; min-height: 52px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px; min-height: 44px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0; z-index: 10;
@@ -117,10 +145,10 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: var(--accent-gradient);
 }
-.header .logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.header .logo { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .header .logo svg { width: 22px; height: 22px; }
 .header .logo span {
-  font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+  font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
   background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -143,8 +171,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
 
 /* ─── Stats ─── */
 .stats {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 12px; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--text-secondary);
   margin-left: auto;
 }
 .stats .stat-item { display: flex; align-items: center; gap: 4px; }
@@ -394,6 +422,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
 @media (max-width: 768px) {
   .header .logo span { display: none; }
   .stats { display: none; }
+  .search-input { font-size: 16px; }
 }
 
 
@@ -409,12 +438,13 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
   overflow-y: auto;
 }
 .sidebar-item {
-  display: flex; align-items: flex-start; gap: 10px;
+  display: grid; align-items: flex-start; gap: 10px;
   padding: 8px 12px; cursor: pointer;
   border-bottom: 1px solid var(--border-light);
   border-left: 3px solid transparent;
   transition: background 0.15s, border-color 0.15s;
   position: relative;
+  font-size: 0.96rem;
 }
 .sidebar-item:hover { background: var(--bg-hover); }
 .sidebar-item.active {
@@ -529,6 +559,11 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
   margin: 12px 16px; padding: 12px 16px;
   border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast, 0.15s);
+}
+.msg:hover {
+  box-shadow: var(--shadow-md);
 }
 .msg.user { border-left: 3px solid var(--blue); }
 .msg.assistant { border-left: 3px solid var(--green); }
@@ -538,7 +573,17 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
 .msg-role {
   font-size: 14px; font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.5px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
 }
+.msg-role::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.msg.user .msg-role::before { background: var(--blue); }
+.msg.assistant .msg-role::before { background: var(--green); }
+.msg.system .msg-role::before { background: var(--amber); }
+.msg.tool_result .msg-role::before { background: var(--purple); }
 .msg.user .msg-role { color: var(--blue, blue); }
 .msg.assistant .msg-role { color: var(--green, green); }
 .msg.system .msg-role { color: var(--amber, amber); }
@@ -550,10 +595,34 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); heig
   max-width: 100%;
   white-space: pre-wrap;
   word-break: break-word;
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--pad, 12px);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
 }
 pre.code-block {
-  white-space: pre;
+  white-space: pre-wrap;
   overflow-x: auto;
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--pad, 12px);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.code-block::-webkit-scrollbar {
+  height: 6px;
+}
+.code-block::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, #bbbec7);
+  border-radius: 3px;
+}
+.code-block::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, transparent);
 }
 .trace-content {
   word-break: break-word;
@@ -610,8 +679,8 @@ pre.code-block {
   display: inline-block;
 }
 .model-pill {
-  font-size: 10px;
-  padding: 1px 6px;
+  font-size: 1rem;
+  padding: 1px;
   border-radius: 999px;
   font-weight: 500;
   white-space: nowrap;
@@ -639,30 +708,63 @@ pre.code-block {
 
 /* ─── Tool Blocks ─── */
 .tool-block {
-  margin: 8px 0; padding: 8px 12px;
+  margin: 8px 16px; padding: 10px 14px;
   background: var(--bg); border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
 }
 .tool-block-header {
   display: flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 600; color: var(--purple);
-  margin-bottom: 6px;
+  font-size: 13px; font-weight: 600; color: var(--purple);
+  margin-bottom: 8px;
 }
 .tb-param {
+  display: flex; gap: 8px;
   font-size: 11px; color: var(--text-secondary);
-  padding: 2px 0;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border-light);
 }
+.tb-param:last-child { border-bottom: none; }
 .tb-param .param-key { color: var(--text-tertiary); }
 .tb-param .param-value { color: var(--text); }
 
 /* ─── Token Bar ─── */
 .token-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 16px; font-size: 11px; color: var(--text-secondary);
-  background: var(--bg-card); border-top: 1px solid var(--border-light);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--gap, 12px);
+  padding: var(--pad, 12px) var(--pad-md, 16px);
+  font-size: 11px;
+  background: var(--bg-card);
+  margin: 0 16px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
 }
-.token-bar .token-item { display: flex; align-items: center; gap: 4px; }
-.token-bar .token-value { font-weight: 600; color: var(--text); }
+.token-bar .token-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+}
+.token-bar .token-item .token-label {
+  font-size: 10px; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.token-bar .token-item .token-value {
+  font-size: 14px; font-weight: 700; color: var(--text);
+}
+.token-bar .token-item .progress-bar {
+  width: 100%; height: 4px;
+  background: var(--border-light);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.token-bar .token-item .progress-bar .progress-fill {
+  height: 100%; border-radius: 2px;
+  background: var(--accent-gradient);
+  transition: width 0.3s ease;
+}
 
 /* ─── JSON View ─── */
 .json-view { font-family: var(--mono); font-size: 12px; line-height: 1.5; overflow-x: auto; max-width: 100%; }
@@ -713,9 +815,12 @@ pre.code-block {
 .section { margin: 8px 16px; }
 .section-header {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 0; font-size: 12px; font-weight: 600;
+  padding: 8px 16px; font-size: 13px; font-weight: 600;
   color: var(--text-secondary); cursor: pointer;
   user-select: none;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card);
+  margin: 0;
 }
 .section-header:hover { color: var(--text); }
 .section-header .section-toggle {
@@ -822,6 +927,11 @@ pre.code-block {
     cursor: pointer;
   }
 
+  .mobile-nav-bar button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   /* Adjust header for mobile */
   .header {
     flex-wrap: wrap;
@@ -888,6 +998,337 @@ pre.code-block {
   font-size: 14px;
   font-weight: 600;
 }
+
+/* ─── Detail Section ─── */
+.detail-section {
+  margin: var(--gap, 12px) var(--pad-md, 16px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.detail-section-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border-light);
+}
+.detail-section-header .section-title {
+  font-size: 13px;
+}
+.detail-section-header .section-badges {
+  display: flex; align-items: center; gap: 4px;
+  margin-left: 4px;
+}
+.detail-section-header .section-badge {
+  font-size: 10px; font-weight: 500;
+  padding: 1px 7px; border-radius: 999px;
+  background: var(--bg); color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+}
+.detail-section-content {
+  padding: 0;
+}
+
+/* ─── Code Block ─── */
+.detail-section-content .code-block {
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--bg-code);
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 12px 16px !important;
+  margin: 0;
+}
+.detail-section-content .code-block.thinking {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ─── System Prompt Markdown Rendering ─── */
+.sysprompt-wrap {
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  background: var(--bg);
+}
+
+/* Headings */
+.md-heading {
+  font-weight: 700;
+  color: var(--text);
+  margin: 16px 0 8px;
+}
+.md-h1 { font-size: 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 4px; }
+.md-h2 { font-size: 14px; }
+.md-h3 { font-size: 13px; }
+.md-h4, .md-h5, .md-h6 { font-size: 12px; color: var(--text-secondary); }
+
+/* Paragraphs */
+.md-paragraph {
+  margin: 6px 0;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+/* Inline code */
+.md-inline-code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--red);
+}
+
+/* Strong */
+.md-paragraph strong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Links */
+.md-link {
+  color: var(--blue);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.md-link:hover {
+  color: var(--indigo);
+}
+
+/* Code blocks */
+.md-code-block {
+  margin: 10px 0;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.md-code-lang {
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.md-code-block .code-block {
+  margin: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 10px 12px !important;
+  font-size: 11px;
+  line-height: 1.5;
+  background: var(--bg-code);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Lists */
+.md-list {
+  margin: 6px 0;
+  padding-left: 24px;
+}
+.md-list li {
+  margin: 3px 0;
+  line-height: 1.6;
+}
+
+/* Blockquotes */
+.md-blockquote {
+  margin: 8px 0;
+  padding: 6px 12px;
+  border-left: 3px solid var(--blue);
+  background: var(--blue-bg);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.md-blockquote p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Horizontal rule */
+.md-hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 12px 0;
+}
+
+/* ─── XML Highlight Block ─── */
+.md-xml-block {
+  margin: 10px 0;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.md-xml-block .code-block {
+  margin: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 10px 12px !important;
+  font-size: 11px;
+  line-height: 1.6;
+  background: var(--bg-code);
+  max-height: 500px;
+  overflow-y: auto;
+}
+.md-xml-block .code-block code {
+  font-family: var(--mono);
+}
+.xml-tag {
+  color: var(--purple);
+  font-weight: 600;
+}
+.xml-attr {
+  color: var(--cyan);
+}
+.xml-val {
+  color: var(--green);
+}
+.xml-role {
+  color: var(--blue);
+  font-weight: 600;
+}
+.xml-note {
+  color: var(--amber);
+  font-style: italic;
+}
+.xml-field {
+  color: var(--purple);
+  font-weight: 600;
+}
+.xml-role-example {
+  color: var(--blue);
+  font-weight: 600;
+}
+.xml-separator {
+  color: var(--text-tertiary);
+  display: block;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+/* ─── Tools Table ─── */
+.tools-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.tool-row {
+  border-bottom: 1px solid var(--border-light);
+}
+.tool-row:last-child {
+  border-bottom: none;
+}
+.tool-row:nth-child(even) {
+  background: var(--bg);
+}
+.tool-name-cell {
+  width: 200px;
+  padding: 9px 16px;
+  vertical-align: top;
+}
+.tool-name-cell code {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--purple);
+}
+.tool-desc-cell {
+  padding: 9px 16px 9px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+.tool-no-desc {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* ─── Tool Uses ─── */
+.tool-uses-list {
+  padding: 0;
+}
+.tool-use-item {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+.tool-use-item:last-child {
+  border-bottom: none;
+}
+.tool-use-header {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 6px;
+}
+.tool-use-icon {
+  font-size: 11px; color: var(--text-tertiary);
+}
+.tool-use-name {
+  font-size: 12px; font-weight: 600;
+  color: var(--purple);
+  font-family: var(--mono);
+}
+.tool-use-id {
+  font-size: 10px; color: var(--text-tertiary);
+  font-family: var(--mono);
+  margin-left: auto;
+}
+.tool-use-input .code-block {
+  font-size: 10px;
+  padding: 8px 12px !important;
+  background: var(--bg);
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-sm) !important;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ─── Usage ─── */
+.usage-list {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.usage-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.usage-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.usage-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.usage-value {
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.usage-bar {
+  height: 6px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent-gradient);
+  transition: width 0.3s ease;
+}
 .meta-label {
   font-weight: 600;
   color: var(--text-secondary);
@@ -895,6 +1336,125 @@ pre.code-block {
 .meta-value {
   font-weight: 400;
   color: var(--text);
+}
+
+/* ─── Detail Overview ─── */
+.detail-overview {
+  margin: var(--gap, 12px) var(--pad-md, 16px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.overview-top-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border-light);
+}
+.overview-top-bar .model-pill {
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
+.overview-top-bar .status-pill,
+.overview-top-bar .duration-pill {
+  font-size: 11px; font-weight: 500;
+  padding: 2px 8px; border-radius: 999px;
+}
+.overview-top-bar .status-pill.success {
+  background: var(--green-bg); color: var(--green);
+}
+.overview-top-bar .status-pill.error {
+  background: var(--red-bg); color: var(--red);
+}
+.overview-top-bar .duration-pill {
+  background: var(--bg); color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  margin-left: auto;
+}
+
+/* Meta Table */
+.meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.meta-table tr {
+  border-bottom: 1px solid var(--border-light);
+}
+.meta-table tr:last-child {
+  border-bottom: none;
+}
+.meta-table td {
+  padding: 7px 16px;
+  vertical-align: middle;
+}
+.meta-table .meta-label {
+  width: 90px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  background: var(--bg);
+  padding-right: 12px;
+}
+.meta-table .meta-value {
+  color: var(--text);
+  font-weight: 400;
+  padding-right: 24px;
+}
+.meta-table .meta-value code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.meta-table .meta-value.mono {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.meta-table .path-cell {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.meta-table .path-cell code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.meta-table .status-badge {
+  font-size: 11px; font-weight: 600;
+  padding: 1px 8px; border-radius: 999px;
+}
+.meta-table .status-badge.success {
+  background: var(--green-bg); color: var(--green);
+}
+.meta-table .status-badge.error {
+  background: var(--red-bg); color: var(--red);
+}
+
+/* ─── Empty State ─── */
+.detail-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; min-height: 300px;
+  color: var(--text-tertiary); font-size: 14px;
+  gap: 8px;
+}
+.detail-empty .empty-icon {
+  font-size: 48px; opacity: 0.3; margin-bottom: 8px;
+}
+.sidebar-empty {
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; color: var(--text-tertiary); font-size: 13px;
 }
 
 </style>
@@ -2560,31 +3120,37 @@ function renderRequestOverview(entry) {
   const model = request.body?.model ?? "unknown";
   const status = response.status;
   const statusClass = status >= 200 && status < 300 ? "success" : "error";
+  const ts = new Date(entry.timestamp);
+  const timeStr = ts.toLocaleString();
   return `
     <div class="detail-overview">
-      <div class="detail-overview-header">
+      <div class="overview-top-bar">
         <span class="model-pill">${esc(model)}</span>
         <span class="status-pill ${statusClass}">${status}</span>
         <span class="duration-pill">${fmtDuration(entry.duration_ms)}</span>
       </div>
-      <div class="detail-overview-meta">
-        <div class="meta-row">
-          <span class="meta-label">Method</span>
-          <span class="meta-value">${esc(request.method)}</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Path</span>
-          <span class="meta-value">${esc(request.path)}</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Request ID</span>
-          <span class="meta-value">${esc(entry.request_id)}</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Timestamp</span>
-          <span class="meta-value">${esc(entry.timestamp)}</span>
-        </div>
-      </div>
+      <table class="meta-table">
+        <tr>
+          <td class="meta-label">Method</td>
+          <td class="meta-value"><code>${esc(request.method)}</code></td>
+          <td class="meta-label">Status</td>
+          <td class="meta-value"><span class="status-badge ${statusClass}">${status}</span></td>
+        </tr>
+        <tr>
+          <td class="meta-label">Path</td>
+          <td class="meta-value path-cell" colspan="3"><code>${esc(request.path)}</code></td>
+        </tr>
+        <tr>
+          <td class="meta-label">Request ID</td>
+          <td class="meta-value mono">${esc(entry.request_id)}</td>
+          <td class="meta-label">Duration</td>
+          <td class="meta-value mono">${fmtDuration(entry.duration_ms)}</td>
+        </tr>
+        <tr>
+          <td class="meta-label">Timestamp</td>
+          <td class="meta-value mono" colspan="3">${esc(timeStr)}</td>
+        </tr>
+      </table>
     </div>
   `;
 }
@@ -2598,13 +3164,156 @@ function renderSystemPrompt(request) {
     <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">System Prompt</span>
-        <span class="section-count">${text.length} chars</span>
+        <span class="section-badges">
+          <span class="section-badge">${text.split(`
+`).length} lines</span>
+          <span class="section-badge">${text.length.toLocaleString()} chars</span>
+        </span>
       </div>
-      <div class="detail-section-content">
-        <pre class="code-block">${esc(text)}</pre>
+      <div class="detail-section-content sysprompt-wrap">
+        ${renderMarkdownContent(text)}
       </div>
     </div>
   `;
+}
+function renderMarkdownContent(text) {
+  const lines = text.split(`
+`);
+  const html = [];
+  let i = 0;
+  const firstNonEmpty = lines.find((l) => l.trim() !== "");
+  const isXmlDoc = firstNonEmpty && /^\s*<\w+[\s>]/.test(firstNonEmpty);
+  if (isXmlDoc) {
+    return `<div class="md-xml-block"><pre class="code-block"><code>${renderXmlHighlight(text)}</code></pre></div>`;
+  }
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.startsWith("```")) {
+      const lang = line.slice(3).trim();
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++;
+      html.push(`<div class="md-code-block">
+        ${lang ? `<div class="md-code-lang">${esc(lang)}</div>` : ""}
+        <pre class="code-block"><code>${esc(codeLines.join(`
+`))}</code></pre>
+      </div>`);
+      continue;
+    }
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const title = headingMatch[2];
+      html.push(`<div class="md-heading md-h${level}">${esc(title)}</div>`);
+      i++;
+      continue;
+    }
+    if (/^---+\s*$/.test(line)) {
+      html.push(`<hr class="md-hr">`);
+      i++;
+      continue;
+    }
+    if (line.startsWith("> ")) {
+      const quoteLines = [line.slice(2)];
+      i++;
+      while (i < lines.length && lines[i].startsWith("> ")) {
+        quoteLines.push(lines[i].slice(2));
+        i++;
+      }
+      html.push(`<blockquote class="md-blockquote"><p>${esc(quoteLines.join(`
+`))}</p></blockquote>`);
+      continue;
+    }
+    if (/^[-*]\s+/.test(line)) {
+      const items = [line.replace(/^[-*]\s+/, "")];
+      i++;
+      while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^[-*]\s+/, ""));
+        i++;
+      }
+      const listHtml = items.map((item) => `<li>${esc(item)}</li>`).join("");
+      html.push(`<ul class="md-list">${listHtml}</ul>`);
+      continue;
+    }
+    if (/^\d+\.\s+/.test(line)) {
+      const items = [line.replace(/^\d+\.\s+/, "")];
+      i++;
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\d+\.\s+/, ""));
+        i++;
+      }
+      const listHtml = items.map((item) => `<li>${esc(item)}</li>`).join("");
+      html.push(`<ol class="md-list">${listHtml}</ol>`);
+      continue;
+    }
+    if (line.trim() === "") {
+      i++;
+      continue;
+    }
+    if (line.trimStart().startsWith("<") && /^<\w+/.test(line.trimStart())) {
+      const xmlLines = [line];
+      const tagName = line.trimStart().match(/^<(\w+)/)?.[1];
+      i++;
+      while (i < lines.length) {
+        const next = lines[i];
+        if (tagName && new RegExp(`^\\s*</${tagName}>\\s*$`).test(next)) {
+          xmlLines.push(next);
+          i++;
+          break;
+        }
+        xmlLines.push(next);
+        i++;
+      }
+      while (i < lines.length && lines[i].trim() === "") {
+        i++;
+      }
+      const xmlText = xmlLines.join(`
+`);
+      html.push(`<div class="md-xml-block"><pre class="code-block"><code>${renderXmlHighlight(xmlText)}</code></pre></div>`);
+      continue;
+    }
+    const paraLines = [line];
+    i++;
+    while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("```") && !/^#{1,6}\s/.test(lines[i])) {
+      paraLines.push(lines[i]);
+      i++;
+    }
+    const paraText = paraLines.join(" ");
+    html.push(`<p class="md-paragraph">${renderInlineMarkdown(esc(paraText))}</p>`);
+  }
+  return html.join(`
+`);
+}
+function renderInlineMarkdown(text) {
+  text = text.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+  text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="md-link" href="$2" target="_blank" rel="noopener">$1</a>');
+  return text;
+}
+function renderXmlHighlight(text) {
+  const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const lines = escaped.split(`
+`);
+  const result = [];
+  for (const line of lines) {
+    const trimmed = line.trimStart();
+    const indent = line.slice(0, line.length - trimmed.length);
+    let processed = trimmed.replace(/(&lt;)(\/?)(\w[\w-]*)((?:\s+(?:[\w-]+(?:=(?:"[^"]*"|'[^']*'|[\w-]+))?))*)\s*(\/?)(&gt;)/g, (_match, lt, slash, tagName, attrs, selfClose, gt) => {
+      const attrsHighlighted = attrs.replace(/ ([\w-]+)(=)/g, ' <span class="xml-attr">$1</span>$2').replace(/="([^"]*)"/g, '=<span class="xml-val">"$1"</span>').replace(/='([^']*)'/g, "=<span class='xml-val'>'$1'</span>");
+      return `${lt}<span class="xml-tag">${slash}${tagName}</span>${attrsHighlighted}${selfClose}${gt}`;
+    });
+    processed = processed.replace(/^(user|assistant):/gmi, '<span class="xml-role-example">$1</span>:');
+    processed = processed.replace(/\[(saved|saves|save)[^\]]*\]/gi, '<span class="xml-note">$&</span>');
+    processed = processed.replace(/\b(name|description|when_to_save|how_to_use|body_structure|type)\b(?=\s*:)/gi, '<span class="xml-field">$1</span>');
+    processed = processed.replace(/^---+$/gm, '<span class="xml-separator">$&</span>');
+    result.push(indent + processed);
+  }
+  return result.join(`
+`);
 }
 function renderMessages(request) {
   const messages = getMessages(request);
@@ -2635,7 +3344,9 @@ function renderMessages(request) {
     <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">Messages</span>
-        <span class="section-count">${messages.length} messages</span>
+        <span class="section-badges">
+          <span class="section-badge">${messages.length} messages</span>
+        </span>
       </div>
       <div class="detail-section-content">
         ${messageHtml}
@@ -2648,21 +3359,23 @@ function renderTools(request) {
   if (tools.length === 0)
     return "";
   const toolHtml = tools.map((tool) => `
-    <div class="tool-item">
-      <div class="tool-header">
-        <span class="tool-name">${esc(tool.name)}</span>
-      </div>
-      ${tool.description ? `<div class="tool-description">${esc(tool.description)}</div>` : ""}
-    </div>
+    <tr class="tool-row">
+      <td class="tool-name-cell"><code>${esc(tool.name)}</code></td>
+      <td class="tool-desc-cell">${tool.description ? esc(tool.description) : '<span class="tool-no-desc">—</span>'}</td>
+    </tr>
   `).join("");
   return `
     <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">Tools</span>
-        <span class="section-count">${tools.length} tools</span>
+        <span class="section-badges">
+          <span class="section-badge">${tools.length} tools</span>
+        </span>
       </div>
       <div class="detail-section-content">
-        ${toolHtml}
+        <table class="tools-table">
+          ${toolHtml}
+        </table>
       </div>
     </div>
   `;
@@ -2677,10 +3390,12 @@ function renderResponseContent(response) {
   let html = "";
   if (thinkingText) {
     html += `
-      <div class="detail-section thinking-section">
+      <div class="detail-section">
         <div class="detail-section-header">
           <span class="section-title">Thinking</span>
-          <span class="section-count">${thinkingText.length} chars</span>
+          <span class="section-badges">
+            <span class="section-badge">${thinkingText.length.toLocaleString()} chars</span>
+          </span>
         </div>
         <div class="detail-section-content">
           <pre class="code-block thinking">${esc(thinkingText)}</pre>
@@ -2694,7 +3409,9 @@ function renderResponseContent(response) {
       <div class="detail-section">
         <div class="detail-section-header">
           <span class="section-title">Response</span>
-          <span class="section-count">${text.length} chars</span>
+          <span class="section-badges">
+            <span class="section-badge">${text.length.toLocaleString()} chars</span>
+          </span>
         </div>
         <div class="detail-section-content">
           <pre class="code-block">${esc(text)}</pre>
@@ -2706,8 +3423,9 @@ function renderResponseContent(response) {
     const toolHtml = toolUseBlocks.map((tool) => `
       <div class="tool-use-item">
         <div class="tool-use-header">
-          <span class="tool-name">${esc(tool.name ?? "")}</span>
-          <span class="tool-id">${esc(tool.id ?? "")}</span>
+          <span class="tool-use-icon">⚙</span>
+          <span class="tool-use-name">${esc(tool.name ?? "")}</span>
+          <span class="tool-use-id">${esc(tool.id ?? "")}</span>
         </div>
         <div class="tool-use-input">
           <pre class="code-block">${esc(JSON.stringify(tool.input, null, 2))}</pre>
@@ -2718,10 +3436,14 @@ function renderResponseContent(response) {
       <div class="detail-section">
         <div class="detail-section-header">
           <span class="section-title">Tool Uses</span>
-          <span class="section-count">${toolUseBlocks.length} calls</span>
+          <span class="section-badges">
+            <span class="section-badge">${toolUseBlocks.length} calls</span>
+          </span>
         </div>
         <div class="detail-section-content">
-          ${toolHtml}
+          <div class="tool-uses-list">
+            ${toolHtml}
+          </div>
         </div>
       </div>
     `;
@@ -2732,33 +3454,42 @@ function renderUsage(response) {
   const usage = getUsage(response);
   if (!usage)
     return "";
+  const items = [
+    { label: "Input", value: usage.input_tokens },
+    { label: "Output", value: usage.output_tokens }
+  ];
+  if (usage.cache_creation_input_tokens) {
+    items.push({ label: "Cache Write", value: usage.cache_creation_input_tokens });
+  }
+  if (usage.cache_read_input_tokens) {
+    items.push({ label: "Cache Read", value: usage.cache_read_input_tokens });
+  }
+  const total = items.reduce((s, i) => s + i.value, 0);
+  const usageHtml = items.map((item) => {
+    const pct = total > 0 ? item.value / total * 100 : 0;
+    return `
+      <div class="usage-item">
+        <div class="usage-item-header">
+          <span class="usage-label">${item.label}</span>
+          <span class="usage-value">${fmtNumber(item.value)}</span>
+        </div>
+        <div class="usage-bar">
+          <div class="usage-bar-fill" style="width: ${pct.toFixed(1)}%"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
   return `
-    <div class="detail-section usage-section">
+    <div class="detail-section">
       <div class="detail-section-header">
         <span class="section-title">Token Usage</span>
+        <span class="section-badges">
+          <span class="section-badge">${fmtNumber(total)} total</span>
+        </span>
       </div>
       <div class="detail-section-content">
-        <div class="usage-grid">
-          <div class="usage-item">
-            <span class="usage-label">Input</span>
-            <span class="usage-value">${fmtNumber(usage.input_tokens)}</span>
-          </div>
-          <div class="usage-item">
-            <span class="usage-label">Output</span>
-            <span class="usage-value">${fmtNumber(usage.output_tokens)}</span>
-          </div>
-          ${usage.cache_creation_input_tokens ? `
-            <div class="usage-item">
-              <span class="usage-label">Cache Write</span>
-              <span class="usage-value">${fmtNumber(usage.cache_creation_input_tokens)}</span>
-            </div>
-          ` : ""}
-          ${usage.cache_read_input_tokens ? `
-            <div class="usage-item">
-              <span class="usage-label">Cache Read</span>
-              <span class="usage-value">${fmtNumber(usage.cache_read_input_tokens)}</span>
-            </div>
-          ` : ""}
+        <div class="usage-list">
+          ${usageHtml}
         </div>
       </div>
     </div>

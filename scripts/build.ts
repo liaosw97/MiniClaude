@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync } from 'fs'
+import { chmodSync, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { dirname, join } from 'path'
 
 const pkg = await Bun.file(new URL('../package.json', import.meta.url)).json() as {
@@ -380,4 +380,24 @@ bun run "%~dp0${require('path').basename(outfile)}" %*
   }
 
   console.log(`✅ Built ${outfile}`)
+
+  // 复制 viewer 文件到 dist/viewer/
+  const viewerDistDir = join('./dist', 'viewer')
+  if (!existsSync(viewerDistDir)) {
+    mkdirSync(viewerDistDir, { recursive: true })
+  }
+  try {
+    const viewerSrc = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'viewer.html')
+    const dashboardSrc = join(import.meta.dirname, '..', 'src', 'services', 'trace', 'viewer', 'dashboard.html')
+    if (existsSync(viewerSrc)) {
+      copyFileSync(viewerSrc, join(viewerDistDir, 'viewer.html'))
+      console.log(`  + Copied viewer.html → dist/viewer/`)
+    }
+    if (existsSync(dashboardSrc)) {
+      copyFileSync(dashboardSrc, join(viewerDistDir, 'dashboard.html'))
+      console.log(`  + Copied dashboard.html → dist/viewer/`)
+    }
+  } catch (err) {
+    console.warn(`  ⚠️ Warning: Failed to copy viewer files: ${(err as Error).message}`)
+  }
 }
