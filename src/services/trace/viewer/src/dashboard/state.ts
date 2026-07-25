@@ -112,17 +112,33 @@ export function computeOverviewMetrics(): {
   totalTokens: number
   totalTurns: number
   uniqueModels: number
+  cacheHitRate: number | null
 } {
   const sessions = state.sessions
   const totalTokens = sessions.reduce((sum, s) => sum + s.totalInputTokens + s.totalOutputTokens, 0)
   const totalTurns = sessions.reduce((sum, s) => sum + s.turns, 0)
   const uniqueModels = new Set(sessions.map(s => s.model)).size
 
+  // 计算缓存命中率：仅当有缓存数据时返回
+  let totalCacheHits = 0
+  let totalRequests = 0
+  let hasCacheData = false
+  for (const s of sessions) {
+    const hits = s.cacheHits ?? 0
+    const requests = s.turns || 0
+    if (s.cacheHits !== undefined) {
+      hasCacheData = true
+    }
+    totalCacheHits += hits
+    totalRequests += s.turns || 0
+  }
+
   return {
     totalSessions: sessions.length,
     totalTokens,
     totalTurns,
     uniqueModels,
+    cacheHitRate: hasCacheData && totalRequests > 0 ? totalCacheHits / totalRequests : null,
   }
 }
 

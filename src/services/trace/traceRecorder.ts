@@ -3,13 +3,40 @@
  * 负责拦截 API 请求和响应
  */
 
-import { appendTraceRecord, createSessionEntry, updateSessionEntry } from './traceStore.js'
+import { appendTraceRecord, createSessionEntry, updateSessionEntry, readIndex } from './traceStore.js'
 import { broadcastTraceRecord } from './traceServer.js'
 import type { TraceRecord } from './types.js'
 import { traceLogger } from './traceLogger.js'
+import { SSEReassembler } from './sse-reassembler.js'
+import { normalizeUsage } from './normalize-usage.js'
+import { createTurnCounter, type TurnCounter } from './turn-counter.js'
+import { wrapWebSocket } from './ws-recorder.js'
 
 export interface TraceRecorderOptions {
   enabled?: boolean
+  storeStreamEvents?: boolean
+}
+
+let turnCounter: TurnCounter = createTurnCounter()
+
+/**
+ * 从 index.json 恢复 Turn 计数器状态（程序重启后从断点继续）
+ */
+export async function initTurnCounter(configDir?: string): Promise<void> {
+  try {
+    const index = await readIndex(configDir)
+    const state: Record<string, number> = {}
+    for (const session of index.sessions) {
+      if (session.lastTurn > 0) {
+        state[session.id] = session.lastTurn
+      }
+    }
+    if (Object.keys(state).length > 0) {
+      turnCounter = createTurnCounter(state)
+    }
+  } catch {
+    // 读取失败则使用默认空状态
+  }
 }
 
 /**
@@ -39,7 +66,8 @@ function redactHeaders(headers: Record<string, string>): Record<string, string> 
 }
 
 /**
- * 解析 SSE 流式响应
+ * 解析 SSE 流式响应（已废弃，由 SSEReassembler 替代）
+ * @deprecated 使用 sse-reassembler.ts 的 SSEReassembler 类替代
  */
 async function parseSSEStream(body: ReadableStream<Uint8Array>): Promise<{ chunks: unknown[], usage?: unknown }> {
   const reader = body.getReader()
@@ -96,7 +124,7 @@ export function createTraceFetch(
   options: TraceRecorderOptions = {},
   innerFetch?: typeof globalThis.fetch
 ): ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) | undefined {
-  const { enabled = true } = options
+  const { enabled = true, storeStreamEvents = false } = options
 
   if (!enabled) {
     return undefined
@@ -115,7 +143,8 @@ export function createTraceFetch(
       timestamp: new Date().toISOString(),
       data: {
         body: requestBody,
-        headers: rawHeaders ? redactHeaders(rawHeaders) : undefined
+        headers: rawHeaders ? redactHeaders(rawHeaders) : undefined,
+        turn: turnCounter.next(sessionId),
       }
     }
 
@@ -156,34 +185,42 @@ export function createTraceFetch(
     const elapsed = Date.now() - startTime
 
     if (isSSE) {
-      // SSE 流式响应：克隆流并解析
+      // SSE 流式响应：使用 SSEReassembler 重组
       const responseClone = response.clone()
       setImmediate(async () => {
-        let chunks: unknown[] = []
-        let usage: unknown = undefined
+        const reassembler = new SSEReassembler(storeStreamEvents)
         try {
-          const parsed = await parseSSEStream(responseClone.body!)
-          chunks = parsed.chunks
-          usage = parsed.usage
+          const reader = responseClone.body!.getReader()
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            reassembler.feedBytes(value)
+          }
+          const reconstructed = reassembler.reconstruct()
+          const usage = reconstructed?.usage
+          const normalized = normalizeUsage(usage as any)
+
           const responseRecord: TraceRecord = {
             type: 'response',
             timestamp: new Date().toISOString(),
             data: {
-              body: { stream: true, chunks },
-              usage: usage as TraceRecord['data']['usage']
+              body: reconstructed,
+              usage: normalized as any,
+              normalized_usage: normalized as any,
             }
           }
           await appendTraceRecord(sessionId, responseRecord, undefined, configDir)
-          // 更新 session 索引统计
-          const inputTokens = (usage as any)?.input_tokens ?? 0
-          const outputTokens = (usage as any)?.output_tokens ?? 0
+          const inputTokens = (normalized as any)?.input_tokens ?? 0
+          const outputTokens = (normalized as any)?.output_tokens ?? 0
+          const currentTurn = turnCounter.current(sessionId)
           await updateSessionEntry(sessionId, {
-            turns: 1,
+            turns: currentTurn,
+            lastTurn: currentTurn,
             totalInputTokens: inputTokens,
             totalOutputTokens: outputTokens,
           }, configDir).catch(() => {})
         } catch (error) {
-          traceLogger.error('Failed to parse SSE stream', error)
+          traceLogger.error('Failed to reassemble SSE stream', error)
         }
         try {
           broadcastTraceRecord({
@@ -192,7 +229,7 @@ export function createTraceFetch(
             timestamp: new Date().toISOString(),
             duration_ms: elapsed,
             request: { method: init?.method || 'POST', path: String(input), body: requestBody },
-            response: { status: response.status, body: { stream: true, chunks }, usage },
+            response: { status: response.status, body: reconstructed, usage },
             transport: 'fetch'
           })
         } catch { /* SSE broadcast failure is non-fatal */ }
@@ -213,12 +250,15 @@ export function createTraceFetch(
             }
           }
           await appendTraceRecord(sessionId, responseRecord, undefined, configDir)
-          // 更新 session 索引统计
-          const usage = responseBody?.usage
-          const inputTokens = usage?.input_tokens ?? 0
-          const outputTokens = usage?.output_tokens ?? 0
+          // 更新 session 索引统计（使用 normalizeUsage 确保跨 provider 兼容）
+          const rawUsage = responseBody?.usage
+          const normalized = normalizeUsage(rawUsage as any)
+          const inputTokens = (normalized as any)?.input_tokens ?? 0
+          const outputTokens = (normalized as any)?.output_tokens ?? 0
+          const currentTurn = turnCounter.current(sessionId)
           await updateSessionEntry(sessionId, {
-            turns: 1,
+            turns: currentTurn,
+            lastTurn: turnCounter.current(sessionId),
             totalInputTokens: inputTokens,
             totalOutputTokens: outputTokens,
           }, configDir).catch(() => {})
@@ -241,6 +281,20 @@ export function createTraceFetch(
 
     return response
   }
+}
+
+/**
+ * 启用 WebSocket 追踪，拦截 MCP WebSocket 双向消息
+ * WebSocket 未启用时静默跳过，不产生错误
+ */
+export function enableWebSocketTracing(ws: WebSocket | null): WebSocket | null {
+  const wrapped = wrapWebSocket(ws)
+  if (!wrapped) {
+    // WebSocket 未启用时静默跳过
+    return null
+  }
+  // wrapped WebSocket 已自动记录双向消息
+  return wrapped
 }
 
 /**

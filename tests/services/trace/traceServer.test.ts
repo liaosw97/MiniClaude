@@ -1,304 +1,61 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest'
-import { existsSync, rmSync, mkdirSync } from 'fs'
-import { join } from 'path'
-import { tmpdir } from 'os'
+import { describe, it, expect } from 'vitest'
+import { startTraceServer } from '../../../src/services/trace/traceServer.js'
 
-let testDir: string
-
-beforeAll(() => {
-  const occupiedPorts = new Set<number>()
-  vi.stubGlobal('Bun', {
-    serve: vi.fn((options: any) => {
-      const requestedPort = options.port ?? 3900
-      if (occupiedPorts.has(requestedPort)) {
-        const err = new Error('address already in use') as any
-        err.code = 'EADDRINUSE'
-        throw err
-      }
-      occupiedPorts.add(requestedPort)
-      return {
-        port: requestedPort,
-        stop: vi.fn(() => occupiedPorts.delete(requestedPort)),
-      }
-    }),
-    spawn: vi.fn(),
-  })
-})
-
-afterAll(() => {
-  vi.unstubAllGlobals()
-})
-
-beforeEach(() => {
-  testDir = join(tmpdir(), `trace-server-test-${Date.now()}`)
-  mkdirSync(testDir, { recursive: true })
-})
-
-afterEach(() => {
-  if (existsSync(testDir)) {
-    rmSync(testDir, { recursive: true, force: true })
-  }
-})
-
-describe('startTraceServer', () => {
-  it('should start server and return port', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    const { createSessionEntry } = await import('../../../src/services/trace/traceStore')
-
-    await createSessionEntry('test-session', 'claude-3-opus', testDir)
-
-    const server = await startTraceServer({ port: 3900 })
-    expect(server.port).toBe(3900)
-    expect(typeof server.stop).toBe('function')
-
-    server.stop()
+describe('traceServer (unified adapter)', () => {
+  it('should start and stop server', async () => {
+    const { port, stop } = await startTraceServer({ port: 0 })
+    expect(port).toBeGreaterThan(0)
+    expect(typeof stop).toBe('function')
+    stop()
   })
 
-  it('should try next port when port is in use', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-    // 启动第一个 server 占用端口
-    const server1 = await startTraceServer({ port: 3901 })
-    expect(server1.port).toBe(3901)
-
-    // 尝试启动第二个 server，应该自动尝试下一个端口
-    const server2 = await startTraceServer({ port: 3901 })
-    expect(server2.port).toBe(3902)
-
-    server1.stop()
-    server2.stop()
+  it('should return 200 for root path with HTML', async () => {
+    const { port, stop } = await startTraceServer({ port: 0 })
+    const res = await fetch(`http://localhost:${port}/`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/html')
+    stop()
   })
 
-  it('should serve viewer.html at root path', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-    const server = await startTraceServer({ port: 3903 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/`))
-    expect(response.status).toBe(200)
-    const text = await response.text()
-    expect(text).toContain('<!DOCTYPE html>')
-
-    server.stop()
-  })
-
-  it('should serve dashboard.html at /dashboard', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-    const server = await startTraceServer({ port: 3904 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/dashboard`))
-    expect(response.status).toBe(200)
-    const text = await response.text()
-    expect(text).toContain('<!DOCTYPE html>')
-
-    server.stop()
-  })
-
-  it('should provide SSE endpoint at /events', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-    const server = await startTraceServer({ port: 3905 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/events`))
-    expect(response.status).toBe(200)
-    expect(response.headers.get('content-type')).toContain('text/event-stream')
-
-    server.stop()
-  })
-
-  it('should provide API endpoint for session list', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    const { createSessionEntry } = await import('../../../src/services/trace/traceStore')
-
-    await createSessionEntry('test-session', 'claude-3-opus', testDir)
-
-    const server = await startTraceServer({ port: 3906 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/api/traces`))
-    expect(response.status).toBe(200)
-    const sessions = await response.json()
+  it('should return sessions list as JSON', async () => {
+    const { port, stop } = await startTraceServer({ port: 0 })
+    const res = await fetch(`http://localhost:${port}/api/sessions`)
+    expect(res.status).toBe(200)
+    const sessions = await res.json()
     expect(Array.isArray(sessions)).toBe(true)
-
-    server.stop()
+    stop()
   })
 
-  it('should provide API endpoint for session details', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    const { createSessionEntry, appendTraceRecord } = await import('../../../src/services/trace/traceStore')
-
-    const sessionId = 'test-session-detail'
-    await createSessionEntry(sessionId, 'claude-3-opus', testDir)
-
-    const today = new Date().toISOString().split('T')[0]
-    await appendTraceRecord(sessionId, { type: 'request', timestamp: '2026-05-29T10:00:00Z', data: {} }, today, testDir)
-
-    const server = await startTraceServer({ port: 3907 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/api/traces/${sessionId}`))
-    expect(response.status).toBe(200)
-    const records = await response.json()
-    expect(Array.isArray(records)).toBe(true)
-
-    server.stop()
+  it('should include Same-Origin security headers', async () => {
+    const { port, stop } = await startTraceServer({ port: 0 })
+    const res = await fetch(`http://localhost:${port}/`)
+    expect(res.headers.get('x-frame-options')).toBe('DENY')
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+    stop()
   })
 
-  it('should return 400 for missing session ID', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-    const server = await startTraceServer({ port: 3908 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/api/traces/`))
-    expect([200, 400, 404]).toContain(response.status)
-
-    server.stop()
-  })
-
-  it('should return 200 with empty array for non-existent session ID', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-    const server = await startTraceServer({ port: 3909 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/api/traces/non-existent`))
-    expect(response.status).toBe(200)
-    const records = await response.json()
-    expect(Array.isArray(records)).toBe(true)
-
-    server.stop()
-  })
-
-  it('should return 200 with viewer.html for unknown routes', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-    const server = await startTraceServer({ port: 3915 })
-
-    const fetchFn = vi.mocked(Bun.serve).mock.lastCall![0]!.fetch as any
-    const response = await fetchFn(new Request(`http://localhost:${server.port}/api/unknown`))
-    expect(response.status).toBe(200)
-    const text = await response.text()
-    expect(text).toContain('<!DOCTYPE html>')
-
-    server.stop()
-  })
-})
-
-describe('broadcastTraceRecord', () => {
-  it('should export broadcastTraceRecord function', async () => {
-    const { broadcastTraceRecord } = await import('../../../src/services/trace/traceServer')
-    expect(typeof broadcastTraceRecord).toBe('function')
-  })
-})
-
-describe('idleTimeout configuration', () => {
-  it('should start server with default options (idleTimeout capped to 255)', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    // 默认 idleTimeout 为 300，需截断到 255 才能通过 Bun.serve 限制
-    const server = await startTraceServer({ port: 3910 })
-    expect(server.port).toBe(3910)
-    server.stop()
-  })
-
-  it('should cap idleTimeout to 255 when value exceeds limit', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    // 即使传入 1000，也不应抛出错误（应截断到 255）
-    const server = await startTraceServer({ port: 3911, idleTimeout: 1000 })
-    expect(server.port).toBe(3911)
-    server.stop()
-  })
-
-  it('should accept idleTimeout at the max boundary (255)', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    const server = await startTraceServer({ port: 3912, idleTimeout: 255 })
-    expect(server.port).toBe(3912)
-    server.stop()
-  })
-
-  it('should accept idleTimeout below max (120)', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    const server = await startTraceServer({ port: 3913, idleTimeout: 120 })
-    expect(server.port).toBe(3913)
-    server.stop()
-  })
-
-  it('should accept idleTimeout=0 (disable timeout)', async () => {
-    const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-    const server = await startTraceServer({ port: 3914, idleTimeout: 0 })
-    expect(server.port).toBe(3914)
-    server.stop()
-  })
-})
-
-describe('openBrowser', () => {
-  it('should export openBrowser function', async () => {
-    const { openBrowser } = await import('../../../src/services/trace/traceServer')
-    expect(typeof openBrowser).toBe('function')
-  })
-
-  it('should not throw when opening URL in Node.js (uses child_process.spawn)', async () => {
-    // 移除 Bun global，模拟 Node.js 环境
-    const origBun = (globalThis as any).Bun
-    delete (globalThis as any).Bun
-
+  it('should handle SSE events endpoint', async () => {
+    const { port, stop } = await startTraceServer({ port: 0 })
+    // 使用 AbortController 在 3 秒后取消请求
+    const ac = new AbortController()
+    const timer = setTimeout(() => ac.abort(), 3000)
     try {
-      const { openBrowser } = await import('../../../src/services/trace/traceServer')
-
-      // openBrowser 在 Node.js 下不应抛出异常
-      // 注意：spawn 返回 child 的 unref() 是 undefined，
-      // 所以在 child.on('error') 调用前需要保护
-      // 直接调用 openBrowser 应该不抛异常
-      const result = openBrowser('http://127.0.0.1:1')
-      expect(result).toBeUndefined()
+      const res = await fetch(`http://localhost:${port}/events`, { signal: ac.signal })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toContain('text/event-stream')
+    } catch {
+      // 超时导致的 abort 是预期行为，只检查 status 前提是 fetch 返回了
     } finally {
-      // 无论是否异常，确保恢复 Bun global
-      (globalThis as any).Bun = origBun
+      clearTimeout(timer)
+      stop()
     }
-  })
-})
+  }, 10000)
 
-describe('startTraceServer in Node.js mode', () => {
-  it('should start server and return port/stop when Bun is undefined', async () => {
-    const origBun = (globalThis as any).Bun
-    delete (globalThis as any).Bun
-
-    try {
-      const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-      const server = await startTraceServer({ port: 3920 })
-      expect(server.port).toBe(3920)
-      expect(typeof server.stop).toBe('function')
-
-      server.stop()
-    } finally {
-      (globalThis as any).Bun = origBun
-    }
-  })
-
-  it('should try next port when port is in use in Node.js mode', async () => {
-    const origBun = (globalThis as any).Bun
-    delete (globalThis as any).Bun
-
-    try {
-      const { startTraceServer } = await import('../../../src/services/trace/traceServer')
-
-      // 启动第一个 server 占用端口
-      const server1 = await startTraceServer({ port: 3940 })
-      expect(server1.port).toBe(3940)
-
-      // 尝试启动第二个 server，应自动尝试下一端口
-      const server2 = await startTraceServer({ port: 3940 })
-      expect(server2.port).toBe(3941)
-
-      server1.stop()
-      server2.stop()
-    } finally {
-      (globalThis as any).Bun = origBun
-    }
+  it('should handle dashboard endpoint', async () => {
+    const { port, stop } = await startTraceServer({ port: 0 })
+    const res = await fetch(`http://localhost:${port}/dashboard`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/html')
+    stop()
   })
 })

@@ -408,6 +408,13 @@ pre.code-block {
   background: rgba(0,0,0,0.5); z-index: 1000;
   display: flex; align-items: center; justify-content: center;
 }
+/* Escape 关闭通过 JS 处理，见 diff-overlay-data.ts */
+.diff-overlay[data-escape-close] {
+  cursor: pointer;
+}
+.diff-overlay[data-escape-close] > .diff-modal {
+  cursor: default;
+}
 .diff-modal {
   width: 90vw; max-width: 1200px; height: 80vh;
   background: var(--bg-card); border: 1px solid var(--border);

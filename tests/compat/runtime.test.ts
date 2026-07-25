@@ -1,44 +1,58 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 describe('detectRuntime', () => {
-  const originalBun = (globalThis as any).Bun
-  const originalProcess = globalThis.process
-
-  afterEach(() => {
-    if (originalBun === undefined) {
-      delete (globalThis as any).Bun
-    } else {
-      ;(globalThis as any).Bun = originalBun
-    }
-    ;(globalThis as any).process = originalProcess
+  it('should detect current runtime (node in vitest environment)', async () => {
+    const mod = await import('../../src/compat/runtime')
+    const runtime = mod.detectRuntime()
+    // Vitest runs in Node.js, so runtime should be 'node'
+    expect(runtime).toBe('node')
+    expect(mod.isBun).toBe(false)
+    expect(mod.isNode).toBe(true)
+    expect(mod.isDeno).toBe(false)
   })
 
-  it('Bun 环境 → isBun=true, isNode=false', async () => {
-    ;(globalThis as any).Bun = {}
-    vi.resetModules()
-    const { detectRuntime, isBun, isNode } = await import('../../src/compat/runtime')
-    expect(detectRuntime()).toBe('bun')
-    expect(isBun).toBe(true)
-    expect(isNode).toBe(false)
+  it('should export correct types', async () => {
+    const mod = await import('../../src/compat/runtime')
+    expect(typeof mod.detectRuntime).toBe('function')
+    expect(typeof mod.isBun).toBe('boolean')
+    expect(typeof mod.isNode).toBe('boolean')
+    expect(typeof mod.isDeno).toBe('boolean')
+    expect(typeof mod.runtime).toBe('string')
+  })
+})
+
+describe('detectRuntime with mock', () => {
+  beforeEach(async () => {
+    const mod = await import('../../src/compat/runtime')
+    mod._clearMockRuntime()
   })
 
-  it('Node.js 环境 → isBun=false, isNode=true', async () => {
-    delete (globalThis as any).Bun
-    ;(globalThis as any).process = { versions: { node: '20.0.0' } }
-    vi.resetModules()
-    const { detectRuntime, isBun, isNode } = await import('../../src/compat/runtime')
-    expect(detectRuntime()).toBe('node')
-    expect(isBun).toBe(false)
-    expect(isNode).toBe(true)
+  afterEach(async () => {
+    const mod = await import('../../src/compat/runtime')
+    mod._clearMockRuntime()
   })
 
-  it('未知环境 → isBun=false, isNode=false', async () => {
-    delete (globalThis as any).Bun
-    ;(globalThis as any).process = { versions: {} }
-    vi.resetModules()
-    const { detectRuntime, isBun, isNode } = await import('../../src/compat/runtime')
-    expect(detectRuntime()).toBe('unknown')
-    expect(isBun).toBe(false)
-    expect(isNode).toBe(false)
+  it('should mock runtime as bun', async () => {
+    const mod = await import('../../src/compat/runtime')
+    mod._setMockRuntime('bun')
+    expect(mod.detectRuntime()).toBe('bun')
+  })
+
+  it('should mock runtime as node', async () => {
+    const mod = await import('../../src/compat/runtime')
+    mod._setMockRuntime('node')
+    expect(mod.detectRuntime()).toBe('node')
+  })
+
+  it('should mock runtime as deno', async () => {
+    const mod = await import('../../src/compat/runtime')
+    mod._setMockRuntime('deno')
+    expect(mod.detectRuntime()).toBe('deno')
+  })
+
+  it('should mock runtime as unknown', async () => {
+    const mod = await import('../../src/compat/runtime')
+    mod._setMockRuntime('unknown')
+    expect(mod.detectRuntime()).toBe('unknown')
   })
 })

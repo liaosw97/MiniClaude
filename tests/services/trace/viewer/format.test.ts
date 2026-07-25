@@ -69,31 +69,33 @@ describe('fmtDate', () => {
 })
 
 describe('fmtRelativeTime', () => {
+  let _origNow: typeof Date.now
+
   beforeEach(() => {
-    vi.useFakeTimers()
+    _origNow = Date.now
   })
 
   afterEach(() => {
-    vi.useRealTimers()
+    Date.now = _origNow
   })
 
   it('返回 just now 当小于 1 分钟', () => {
-    vi.setSystemTime(new Date('2026-01-15T14:30:45Z'))
+    Date.now = () => new Date('2026-01-15T14:30:45Z').getTime()
     expect(fmtRelativeTime('2026-01-15T14:30:00Z')).toBe('just now')
   })
 
   it('返回分钟当小于 1 小时', () => {
-    vi.setSystemTime(new Date('2026-01-15T14:30:45Z'))
+    Date.now = () => new Date('2026-01-15T14:30:45Z').getTime()
     expect(fmtRelativeTime('2026-01-15T14:25:45Z')).toBe('5m ago')
   })
 
   it('返回小时当小于 1 天', () => {
-    vi.setSystemTime(new Date('2026-01-15T14:30:45Z'))
+    Date.now = () => new Date('2026-01-15T14:30:45Z').getTime()
     expect(fmtRelativeTime('2026-01-15T11:30:45Z')).toBe('3h ago')
   })
 
   it('返回天当大于 1 天', () => {
-    vi.setSystemTime(new Date('2026-01-15T14:30:45Z'))
+    Date.now = () => new Date('2026-01-15T14:30:45Z').getTime()
     expect(fmtRelativeTime('2026-01-12T14:30:45Z')).toBe('3d ago')
   })
 })

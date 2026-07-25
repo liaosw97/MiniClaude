@@ -142,4 +142,5 @@ export interface SessionMetadata {
   turns: number
   totalInputTokens: number
   totalOutputTokens: number
+  cacheHits?: number
 }

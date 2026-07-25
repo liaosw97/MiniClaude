@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest'
 
 // Mock fs 模块 — 必须在所有 import 之前
 const mockAppendFileSync = vi.fn()
@@ -13,6 +13,20 @@ vi.mock('fs', () => ({
 vi.mock('../../../src/utils/debug.js', () => ({
   logForDebugging: vi.fn(),
 }))
+
+/**
+ * 清理本文件 mock 对 require.cache 的污染
+ * Bun 的 vi.mock 是编译期 hoisted，mock 会驻留在模块缓存中
+ * 影响后续测试文件的真实 import。手动清理被 mock 的模块条目。
+ */
+afterAll(() => {
+  const polluted = Object.keys(require.cache).filter(p =>
+    p.includes('/node_modules/fs') ||
+    p.includes('traceLogger') ||
+    p.includes('debug')
+  )
+  for (const p of polluted) delete require.cache[p]
+})
 
 describe('traceLogger', () => {
   beforeEach(() => {

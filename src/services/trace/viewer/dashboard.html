@@ -778,11 +778,15 @@ function computeOverviewMetrics() {
   const totalTokens = sessions.reduce((sum, s) => sum + s.totalInputTokens + s.totalOutputTokens, 0);
   const totalTurns = sessions.reduce((sum, s) => sum + s.turns, 0);
   const uniqueModels = new Set(sessions.map((s) => s.model)).size;
+  const totalErrors = sessions.reduce((sum, s) => sum + (s.errors || 0), 0);
+  const errorRate = totalTurns > 0 ? (totalErrors / totalTurns * 100) : 0;
   return {
     totalSessions: sessions.length,
     totalTokens,
     totalTurns,
-    uniqueModels
+    uniqueModels,
+    totalErrors,
+    errorRate
   };
 }
 
@@ -829,6 +833,16 @@ function renderOverview() {
     <div class="overview-metric">
       <div class="metric-label">Models</div>
       <div class="metric-value">${metrics.uniqueModels}</div>
+    </div>
+    <div class="overview-metric">
+      <div class="metric-label">Error Rate</div>
+      <div class="metric-value" id="error-rate-value" style="color:${metrics.errorRate > 5 ? '#cb2431' : '#22863a'}">${metrics.errorRate.toFixed(1)}%</div>
+      <div class="metric-sub">${metrics.totalErrors} errors / ${metrics.totalTurns} turns</div>
+    </div>
+    <div class="overview-metric">
+      <div class="metric-label">Cache Hit Rate</div>
+      <div class="metric-value" style="font-size:14px;color:var(--text-tertiary);">N/A</div>
+      <div class="metric-sub">需后端数据链路支持</div>
     </div>
   `;
 }

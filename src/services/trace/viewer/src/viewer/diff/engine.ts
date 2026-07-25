@@ -294,6 +294,7 @@ export function lineDiff(oldText: string, newText: string): LineDiffResult[] {
 
 /**
  * 计算最长公共子序列（LCS）
+ * 添加行数保护：超过 5000 行时回退到简单比较
  */
 function computeLCS(
   oldLines: string[],
@@ -301,6 +302,19 @@ function computeLCS(
 ): Array<{ oldIndex: number; newIndex: number }> {
   const m = oldLines.length
   const n = newLines.length
+
+  // 行数保护：超过 5000 行时回退到简单比较
+  if (m > 5000 || n > 5000) {
+    // 简单的逐行比较
+    const lcs: Array<{ oldIndex: number; newIndex: number }> = []
+    const minLen = Math.min(m, n)
+    for (let i = 0; i < minLen; i++) {
+      if (oldLines[i] === newLines[i]) {
+        lcs.push({ oldIndex: i, newIndex: i })
+      }
+    }
+    return lcs
+  }
 
   // 创建 DP 表
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))

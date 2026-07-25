@@ -31,6 +31,17 @@ export function renderOverview(): void {
 
   const metrics = computeOverviewMetrics()
 
+  let cacheCard = ''
+  if (metrics.cacheHitRate !== null) {
+    const pct = (metrics.cacheHitRate * 100).toFixed(1)
+    cacheCard = `
+      <div class="overview-metric">
+        <div class="metric-label">Cache Hit Rate</div>
+        <div class="metric-value">${pct}%</div>
+      </div>
+    `
+  }
+
   overview.innerHTML = `
     <div class="overview-metric">
       <div class="metric-label">Sessions</div>
@@ -48,6 +59,7 @@ export function renderOverview(): void {
       <div class="metric-label">Models</div>
       <div class="metric-value">${metrics.uniqueModels}</div>
     </div>
+    ${cacheCard}
   `
 }
 

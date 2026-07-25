@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
 
 const mockStartTraceServer = vi.fn()
 const mockOpenBrowser = vi.fn()
@@ -57,6 +57,21 @@ vi.mock('readline', () => ({
     [Symbol.asyncIterator]: vi.fn(),
   })),
 }))
+
+/**
+ * 清理本文件 mock 对 require.cache 的污染
+ */
+afterAll(() => {
+  const polluted = Object.keys(require.cache).filter(p =>
+    p.includes('traceCommands') ||
+    p.includes('traceServer') ||
+    p.includes('traceStore') ||
+    p.includes('traceLogger') ||
+    p.includes('/node_modules/fs') ||
+    p.includes('/node_modules/readline')
+  )
+  for (const p of polluted) delete require.cache[p]
+})
 
 describe('traceCommand', () => {
   beforeEach(() => {
@@ -120,7 +135,7 @@ describe('traceCommand', () => {
     const { traceCommand } = await import('../../../src/services/trace/traceCommands')
     await traceCommand(['export'])
 
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Missing file path'))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Missing session ID'))
   })
 
   it('export 子命令应对不存在的文件路径提示错误', async () => {
@@ -129,7 +144,7 @@ describe('traceCommand', () => {
     const { traceCommand } = await import('../../../src/services/trace/traceCommands')
     await traceCommand(['export', '/nonexistent/file.jsonl'])
 
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('File not found'))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('requires a file path'))
   })
 
   it('export 子命令成功路径应调用 exportStarted 和 exportCompleted', async () => {

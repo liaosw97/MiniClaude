@@ -8,10 +8,18 @@ export interface TraceRecord {
   data: {
     body?: unknown
     headers?: Record<string, string>
+    turn?: number
     usage?: {
       input_tokens: number
       output_tokens: number
       cache_read_input_tokens?: number
+    }
+    normalized_usage?: {
+      input_tokens: number | null
+      output_tokens: number | null
+      total_tokens: number | null
+      cache_read_input_tokens: number | null
+      cache_creation_input_tokens: number | null
     }
     error?: {
       type: string
@@ -28,8 +36,12 @@ export interface SessionMetadata {
   startedAt: string
   lastActivity: string
   turns: number
+  lastTurn: number
   totalInputTokens: number
   totalOutputTokens: number
+  errors?: number
+  cacheHits?: number
+  cacheHitRate?: number
 }
 
 export interface TraceIndex {

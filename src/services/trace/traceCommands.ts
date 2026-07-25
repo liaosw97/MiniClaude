@@ -45,7 +45,7 @@ export async function traceCommand(args: string[]): Promise<void> {
       await traceView(args[1])
       break
     case 'export':
-      await traceExport(args[1], args[2])
+      await traceExportCmd(args)
       break
     case 'clean':
       await traceClean(parseInt(args[1]) || 30)
@@ -53,15 +53,23 @@ export async function traceCommand(args: string[]): Promise<void> {
     case 'list':
       await traceList()
       break
+    case 'stats':
+      await traceStatsCmd(args[1])
+      break
+    case 'reindex':
+      await traceReindexCmd()
+      break
     default:
-      console.log('Usage: trace <dashboard|view|export|clean|list>')
+      console.log('Usage: trace <dashboard|view|export|clean|list|stats|reindex>')
       console.log('')
       console.log('Commands:')
-      console.log('  dashboard    Open trace dashboard in browser')
-      console.log('  view <file>  View a trace file in browser')
-      console.log('  export <file> [-o output]  Export trace to HTML')
+      console.log('  dashboard        Open trace dashboard in browser')
+      console.log('  view <file>      View a trace file in browser')
+      console.log('  export <sessionId> [--format jsonl|log|html] [-o output]  Export trace')
       console.log('  clean [--days N]  Clean old traces (default: 30 days)')
-      console.log('  list         List all trace sessions')
+      console.log('  list             List all trace sessions')
+      console.log('  stats [sessionId]  Show trace statistics')
+      console.log('  reindex          Rebuild index.json from trace files')
       process.exit(1)
   }
 }
@@ -253,6 +261,71 @@ async function traceList(): Promise<void> {
     }
   } catch (error: any) {
     console.error(`[trace] Failed to list: ${error.message}`)
+    process.exit(1)
+  }
+}
+
+async function traceStatsCmd(sessionId?: string): Promise<void> {
+  try {
+    const { traceStats } = await import('./traceStats.js')
+    const output = await traceStats(sessionId)
+    console.log(output)
+  } catch (error: any) {
+    console.error(`[trace] Failed to get stats: ${error.message}`)
+    process.exit(1)
+  }
+}
+
+async function traceReindexCmd(): Promise<void> {
+  try {
+    const { traceReindex } = await import('./traceReindex.js')
+    const output = await traceReindex()
+    console.log(output)
+  } catch (error: any) {
+    console.error(`[trace] Failed to reindex: ${error.message}`)
+    process.exit(1)
+  }
+}
+
+async function traceExportCmd(args: string[]): Promise<void> {
+  // Parse args: trace export <sessionId> [--format jsonl|log|html] [-o output]
+  let format: 'html' | 'jsonl' | 'log' = 'html'
+  let outputPath: string | undefined
+  let sessionId: string | undefined
+
+  for (let i = 1; i < args.length; i++) {
+    if (args[i] === '--format' && args[i + 1]) {
+      const f = args[++i] as 'html' | 'jsonl' | 'log'
+      if (['html', 'jsonl', 'log'].includes(f)) {
+        format = f
+      } else {
+        console.error(`[trace] Error: 不支持的格式: "${f}"，支持的格式: jsonl, log, html`)
+        process.exit(1)
+      }
+    } else if (args[i] === '-o' && args[i + 1]) {
+      outputPath = args[++i]
+    } else if (!args[i].startsWith('-')) {
+      sessionId = args[i]
+    }
+  }
+
+  if (!sessionId) {
+    console.error('[trace] Error: Missing session ID')
+    console.error('Usage: trace export <sessionId> [--format jsonl|log|html] [-o output]')
+    process.exit(1)
+  }
+
+  try {
+    if (format === 'html') {
+      console.error('[trace] Error: HTML export requires a file path, not a session ID.')
+      console.error('Usage: trace export <file> [-o output]')
+      process.exit(1)
+    }
+    const { traceExport } = await import('./traceExport.js')
+    const result = await traceExport(sessionId, outputPath, format)
+    console.log(result)
+  } catch (error: any) {
+    console.error(`[trace] Failed to export: ${error.message}`)
     process.exit(1)
   }
 }
